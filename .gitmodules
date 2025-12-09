@@ -1,0 +1,3 @@
+[submodule "ebpf-exploitability-test"]
+	path = ebpf-exploitability-test
+	url = https://gitlab1.polito.it/netgroup/thesis/projects/svt-2025-26/ebpf-exploitability-test
