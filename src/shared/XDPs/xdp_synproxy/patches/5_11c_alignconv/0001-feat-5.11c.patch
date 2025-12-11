@@ -1,0 +1,33 @@
+From c95586cd5f1e3d4a8d65dee1c38665e0cfa7c026 Mon Sep 17 00:00:00 2001
+From: Gianfranco Trad <s323713@studenti.polito.it>
+Date: Fri, 29 Aug 2025 17:39:15 +0000
+Subject: [PATCH] feat: 5.11c
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..b755496 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -377,6 +377,16 @@ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 	if (hdr->eth + 1 > data_end)
+ 		return XDP_DROP;
+ 
++/* 
++	 * UB Injection: Converting hdr->eth (aligned for struct ethhdr) to a
++	 * pointer type with stricter alignment (__u64). This results in undefined
++	 * behavior if hdr->eth is not properly aligned for __u64.
++*/
++	__u64 *strictly_aligned_ptr = (__u64 *)hdr->eth;
++	__u64 fake_eth_value = *strictly_aligned_ptr;
++
++	bpf_printk("[alignconv]: Accessed fake_eth_value: %llu", fake_eth_value);
++
+ 	switch (bpf_ntohs(hdr->eth->h_proto)) {
+ 	case ETH_P_IP:
+ 		hdr->ipv6 = NULL;
+-- 
+2.43.0
+

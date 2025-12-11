@@ -1,0 +1,63 @@
+From 43f29c3cb43652eeb177c04250dca77ae79248a3 Mon Sep 17 00:00:00 2001
+From: mood <74420740+no-mood@users.noreply.github.com>
+Date: Sun, 20 Jul 2025 17:18:55 +0200
+Subject: [PATCH] feat(5.6d argcomp): Calling a function with the wrong number
+ or type of arguments.
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 29 +++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..f419a47 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -370,6 +370,9 @@ struct header_pointers {
+ 	__u16 tcp_len;
+ };
+ 
++/* Forward declaration for argcomp violation */
++long helper_function();
++
+ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 				       struct header_pointers *hdr)
+ {
+@@ -422,9 +425,35 @@ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 	if (hdr->tcp_len < sizeof(*hdr->tcp))
+ 		return XDP_DROP;
+ 
++	/* 5.6d [argcomp]: Calling functions with incorrect arguments - EXAMPLE 4
++	 *
++	 * Wrong argument types (UB 41). Based on 5.6 EXAMPLE 4
++	 * where function f is defined to take argument of type long,
++	 * but called with argument of type int.
++	 *
++	 * **Implementation Details:**
++	 * - Forward declaration `helper_function()` is made without parameters
++	 * - The function is called with an int argument
++	 * - But the actual function definition expects a long argument
++	 * - This simulates the cross-file scenario where caller uses wrong type
++	 * - Demonstrates UB 41: "A function is defined with a type that is not
++	 *   compatible with the type (of the expression) pointed to by the expression
++	 *   that denotes the called function."
++	 * - The type mismatch between int and long can lead to incorrect results
++	 */
++	int int_value = (int)bpf_ntohs(hdr->tcp->window);  // int type
++	long result = helper_function(int_value);  // Called with int, but expects long
++	bpf_printk("[argcomp]: 5.6d - math result: %ld", result);
++
+ 	return XDP_TX;
+ }
+ 
++/* Function definitions for argcomp violations - simulate "another source file" */
++/* 5.6d: Takes long argument, but called with int above */
++long helper_function(long x) {
++	return x < 0 ? -x : x;
++}
++
+ static __always_inline int tcp_lookup(void *ctx, struct header_pointers *hdr, bool xdp)
+ {
+ 	struct bpf_ct_opts___local ct_lookup_opts = {
+-- 
+2.49.0
+

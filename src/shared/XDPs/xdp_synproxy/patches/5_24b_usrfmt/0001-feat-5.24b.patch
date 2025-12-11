@@ -1,0 +1,35 @@
+From b8e5561dbb44afbe4ff78c6a60e44b84c94c68f3 Mon Sep 17 00:00:00 2001
+From: Gianfranco Trad <s323713@studenti.polito.it>
+Date: Fri, 29 Aug 2025 19:25:59 +0000
+Subject: [PATCH] feat: 5.24b
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..ccf16ec 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -377,6 +377,18 @@ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 	if (hdr->eth + 1 > data_end)
+ 		return XDP_DROP;
+ 
++/* 
++	 * UB Injection: Format string with tainted input derived from TCP header.
++	 * The TCP source port is extracted and copied into a string buffer.
++	 * This tainted input is then used as part of a format string in
++	 * `bpf_printk`, leading to undefined behavior.
++*/
++	char tainted_input[16];
++	__builtin_memcpy(tainted_input, &hdr->tcp->source, sizeof(hdr->tcp->source));
++	tainted_input[sizeof(hdr->tcp->source)] = '\0';
++	/* Using the tainted input in a format string */
++	bpf_printk("Tainted input: %s", tainted_input);
++
+ 	switch (bpf_ntohs(hdr->eth->h_proto)) {
+ 	case ETH_P_IP:
+ 		hdr->ipv6 = NULL;
+-- 
+2.43.0
+

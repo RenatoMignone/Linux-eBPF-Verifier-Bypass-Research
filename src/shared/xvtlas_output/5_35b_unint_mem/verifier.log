@@ -1,0 +1,33 @@
+libbpf: prog 'syncookie_xdp': BPF program load failed: Permission denied
+libbpf: prog 'syncookie_xdp': -- BEGIN PROG LOAD LOG --
+0: R1=ctx() R10=fp0
+; void *data = (void *)(long)ctx->data;
+0: (61) r9 = *(u32 *)(r1 +0)          ; R1=ctx() R9_w=pkt(r=0)
+; void *data_end = (void *)(long)ctx->data_end;
+1: (61) r6 = *(u32 *)(r1 +4)          ; R1=ctx() R6_w=pkt_end()
+2: (7b) *(u64 *)(r10 -72) = r1        ; R1=ctx() R10=fp0 fp-72_w=ctx()
+; if (bpf_xdp_adjust_tail(ctx, add_len) != 0) {
+3: (b7) r2 = 64                       ; R2_w=64
+4: (85) call bpf_xdp_adjust_tail#65   ; R0_w=scalar()
+; if (bpf_xdp_adjust_tail(ctx, add_len) != 0) {
+5: (55) if r0 != 0x0 goto pc+13       ; R0_w=0
+6: (b7) r7 = 0                        ; R7=0
+; char uninit_byte = ((char *)new_tail_ptr)[i];
+7: (bf) r1 = r6                       ; R1_w=scalar(id=1) R6=scalar(id=1)
+8: (0f) r1 += r7                      ; R1_w=scalar() R7=0
+9: (71) r4 = *(u8 *)(r1 +0)
+R1 invalid mem access 'scalar'
+processed 10 insns (limit 1000000) max_states_per_insn 0 total_states 1 peak_states 1 mark_read 1
+
+[96m#######################
+[96m## Prettier Verifier ##
+[96m#######################
+
+[91merror[0m: [94mCannot write into scalar value (not a pointer)[0m
+   771 | char uninit_byte = ((char *)new_tail_ptr)[i];
+       | in file /home/user/ebpf-tests-3-1/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+
+-- END PROG LOAD LOG --
+libbpf: prog 'syncookie_xdp': failed to load: -13
+libbpf: failed to load object '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy/xdp_synproxy_kern.bpf.o'
+Error: failed to load object file

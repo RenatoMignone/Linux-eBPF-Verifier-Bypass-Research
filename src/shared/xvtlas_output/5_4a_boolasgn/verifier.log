@@ -1,0 +1,239 @@
+libbpf: prog 'syncookie_xdp': BPF program load failed: Invalid argument
+libbpf: prog 'syncookie_xdp': -- BEGIN PROG LOAD LOG --
+0: R1=ctx() R10=fp0
+; int syncookie_xdp(struct xdp_md *ctx)
+0: (b7) r0 = 1                        ; R0_w=1
+; void *data_end = (void *)(long)ctx->data_end;
+1: (61) r2 = *(u32 *)(r1 +4)          ; R1=ctx() R2_w=pkt_end()
+; void *data = (void *)(long)ctx->data;
+2: (61) r8 = *(u32 *)(r1 +0)          ; R1=ctx() R8_w=pkt(r=0)
+; if (hdr->eth + 1 > data_end)
+3: (bf) r3 = r8                       ; R3_w=pkt(r=0) R8_w=pkt(r=0)
+4: (07) r3 += 14                      ; R3_w=pkt(off=14,r=0)
+; if (hdr->eth + 1 > data_end)
+5: (2d) if r3 > r2 goto pc+167        ; R2_w=pkt_end() R3_w=pkt(off=14,r=14)
+; switch (bpf_ntohs(hdr->eth->h_proto)) {
+6: (69) r4 = *(u16 *)(r8 +12)         ; R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff)) R8_w=pkt(r=14)
+7: (dc) r4 = be16 r4                  ; R4_w=scalar()
+; switch (bpf_ntohs(hdr->eth->h_proto)) {
+8: (15) if r4 == 0x86dd goto pc+23    ; R4_w=scalar()
+9: (b7) r0 = 2                        ; R0=2
+10: (55) if r4 != 0x800 goto pc+162   ; R4=2048
+; if (hdr->ipv4 + 1 > data_end)
+11: (07) r8 += 34                     ; R8_w=pkt(off=34,r=14)
+12: (b7) r0 = 1                       ; R0_w=1
+; if (hdr->ipv4 + 1 > data_end)
+13: (2d) if r8 > r2 goto pc+159       ; R2=pkt_end() R8_w=pkt(off=34,r=34)
+; if (hdr->ipv4->ihl * 4 < sizeof(*hdr->ipv4))
+14: (71) r4 = *(u8 *)(r3 +0)          ; R3=pkt(off=14,r=34) R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+; if (hdr->ipv4->ihl * 4 < sizeof(*hdr->ipv4))
+15: (57) r4 &= 15                     ; R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=15,var_off=(0x0; 0xf))
+16: (b7) r5 = 5                       ; R5_w=5
+; if (hdr->ipv4->ihl * 4 < sizeof(*hdr->ipv4))
+17: (2d) if r5 > r4 goto pc+155       ; R4_w=scalar(smin=umin=smin32=umin32=5,smax=umax=smax32=umax32=15,var_off=(0x0; 0xf)) R5_w=5
+; if (hdr->ipv4->version != 4)
+18: (71) r4 = *(u8 *)(r3 +0)          ; R3=pkt(off=14,r=34) R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+; if (hdr->ipv4->version != 4)
+19: (57) r4 &= 240                    ; R4=scalar(smin=smin32=0,smax=umax=smax32=umax32=240,var_off=(0x0; 0xf0))
+; if (hdr->ipv4->version != 4)
+20: (55) if r4 != 0x40 goto pc+152    ; R4=64
+; if (hdr->ipv4->protocol != IPPROTO_TCP)
+21: (71) r4 = *(u8 *)(r3 +9)          ; R3=pkt(off=14,r=34) R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+22: (b7) r0 = 2                       ; R0_w=2
+; if (hdr->ipv4->protocol != IPPROTO_TCP)
+23: (55) if r4 != 0x6 goto pc+149     ; R4_w=6
+; hdr->tcp = (void *)hdr->ipv4 + hdr->ipv4->ihl * 4;
+24: (71) r4 = *(u8 *)(r3 +0)          ; R3=pkt(off=14,r=34) R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+; hdr->tcp = (void *)hdr->ipv4 + hdr->ipv4->ihl * 4;
+25: (67) r4 <<= 2                     ; R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=1020,var_off=(0x0; 0x3fc))
+26: (57) r4 &= 60                     ; R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; hdr->tcp = (void *)hdr->ipv4 + hdr->ipv4->ihl * 4;
+27: (bf) r8 = r3                      ; R3=pkt(off=14,r=34) R8_w=pkt(off=14,r=34)
+28: (0f) r8 += r4                     ; R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R8_w=pkt(id=1,off=14,r=0,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+29: (b7) r5 = 0                       ; R5_w=0
+30: (bf) r9 = r3                      ; R3=pkt(off=14,r=34) R9_w=pkt(off=14,r=34)
+31: (05) goto pc+10
+; if (hdr->tcp + 1 > data_end)
+42: (bf) r3 = r8                      ; R3_w=pkt(id=1,off=14,r=0,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R8=pkt(id=1,off=14,r=0,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+43: (07) r3 += 20                     ; R3_w=pkt(id=1,off=34,r=0,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+44: (b7) r0 = 1                       ; R0_w=1
+; if (hdr->tcp + 1 > data_end)
+45: (2d) if r3 > r2 goto pc+127       ; R2=pkt_end() R3_w=pkt(id=1,off=34,r=34,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; hdr->tcp_len = hdr->tcp->doff * 4;
+46: (69) r7 = *(u16 *)(r8 +12)        ; R7_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff)) R8=pkt(id=1,off=14,r=34,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; hdr->tcp_len = hdr->tcp->doff * 4;
+47: (77) r7 >>= 2                     ; R7_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=16383,var_off=(0x0; 0x3fff))
+48: (57) r7 &= 60                     ; R7_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+49: (b7) r2 = 20                      ; R2_w=20
+;
+50: (2d) if r2 > r7 goto pc+122       ; R2_w=20 R7_w=scalar(smin=umin=smin32=umin32=20,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+51: (b7) r2 = 6                       ; R2_w=6
+; struct bpf_ct_opts___local ct_lookup_opts = {
+52: (63) *(u32 *)(r10 -8) = r2        ; R2_w=6 R10=fp0 fp-8=????6
+53: (18) r2 = 0xffffffff              ; R2_w=0xffffffff
+55: (7b) *(u64 *)(r10 -16) = r2       ; R2_w=0xffffffff R10=fp0 fp-16_w=0xffffffff
+56: (b7) r0 = 0                       ; R0_w=0
+; struct bpf_sock_tuple tup = {};
+57: (63) *(u32 *)(r10 -24) = r0       ; R0_w=0 R10=fp0 fp-24=????0
+58: (7b) *(u64 *)(r10 -32) = r0       ; R0_w=0 R10=fp0 fp-32_w=0
+59: (7b) *(u64 *)(r10 -40) = r0       ; R0_w=0 R10=fp0 fp-40_w=0
+60: (7b) *(u64 *)(r10 -48) = r0       ; R0_w=0 R10=fp0 fp-48_w=0
+61: (7b) *(u64 *)(r10 -56) = r0       ; R0=0 R10=fp0 fp-56=0
+; if (hdr->ipv4) {
+62: (15) if r9 == 0x0 goto pc+17      ; R9=pkt(off=14,r=34)
+63: (b7) r0 = 1                       ; R0_w=1
+; if ((hdr->ipv4->frag_off & bpf_htons(IP_DF | IP_MF | IP_OFFSET)) != bpf_htons(IP_DF))
+64: (69) r2 = *(u16 *)(r9 +6)         ; R2_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff)) R9=pkt(off=14,r=34)
+; if ((hdr->ipv4->frag_off & bpf_htons(IP_DF | IP_MF | IP_OFFSET)) != bpf_htons(IP_DF))
+65: (57) r2 &= 65407                  ; R2_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xff7f,var_off=(0x0; 0xff7f))
+; if ((hdr->ipv4->frag_off & bpf_htons(IP_DF | IP_MF | IP_OFFSET)) != bpf_htons(IP_DF))
+66: (55) if r2 != 0x40 goto pc+106    ; R2_w=64
+67: (7b) *(u64 *)(r10 -64) = r5       ; R5=0 R10=fp0 fp-64_w=0
+68: (bf) r2 = r10                     ; R2_w=fp0 R10=fp0
+; tup.ipv4.saddr = hdr->ipv4->saddr;
+69: (07) r2 += -56                    ; R2_w=fp-56
+70: (61) r3 = *(u32 *)(r9 +12)        ; R3_w=scalar(smin=0,smax=umax=0xffffffff,var_off=(0x0; 0xffffffff)) R9=pkt(off=14,r=34)
+; tup.ipv4.saddr = hdr->ipv4->saddr;
+71: (63) *(u32 *)(r2 +0) = r3         ; R2_w=fp-56 R3_w=scalar(smin=0,smax=umax=0xffffffff,var_off=(0x0; 0xffffffff)) fp-56=mmmmscalar(smin=0,smax=umax=0xffffffff,var_off=(0x0; 0xffffffff))
+; tup.ipv4.daddr = hdr->ipv4->daddr;
+72: (61) r3 = *(u32 *)(r9 +16)        ; R3_w=scalar(smin=0,smax=umax=0xffffffff,var_off=(0x0; 0xffffffff)) R9=pkt(off=14,r=34)
+; tup.ipv4.daddr = hdr->ipv4->daddr;
+73: (63) *(u32 *)(r2 +4) = r3         ; R2_w=fp-56 R3_w=scalar(smin=0,smax=umax=0xffffffff,var_off=(0x0; 0xffffffff)) fp-56=mmmmmmmm
+; tup.ipv4.sport = hdr->tcp->source;
+74: (69) r3 = *(u16 *)(r8 +0)         ; R3_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff)) R8=pkt(id=1,off=14,r=34,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; tup.ipv4.sport = hdr->tcp->source;
+75: (6b) *(u16 *)(r2 +8) = r3         ; R2_w=fp-56 R3_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff)) fp-48=mmmmmmscalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff))
+; tup.ipv4.dport = hdr->tcp->dest;
+76: (69) r3 = *(u16 *)(r8 +2)         ; R3_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff)) R8=pkt(id=1,off=14,r=34,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; tup.ipv4.dport = hdr->tcp->dest;
+77: (6b) *(u16 *)(r2 +10) = r3        ; R2_w=fp-56 R3_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff)) fp-48=mmmmmmmm
+78: (b7) r3 = 12                      ; R3_w=12
+79: (05) goto pc+37
+; tup.ipv6.dport = hdr->tcp->dest;
+117: (bf) r2 = r10                    ; R2_w=fp0 R10=fp0
+;
+118: (07) r2 += -56                   ; R2_w=fp-56
+119: (bf) r4 = r10                    ; R4_w=fp0 R10=fp0
+120: (07) r4 += -16                   ; R4_w=fp-16
+121: (7b) *(u64 *)(r10 -72) = r1      ; R1=ctx() R10=fp0 fp-72_w=ctx()
+; ct = bpf_xdp_ct_lookup(ctx, &tup, tup_size, &ct_lookup_opts, sizeof(ct_lookup_opts));
+122: (b7) r5 = 12                     ; R5_w=12
+123: (85) call bpf_xdp_ct_lookup#140524       ; R0_w=ptr_or_null_nf_conn(id=3,ref_obj_id=3) refs=3
+; if (ct) {
+124: (15) if r0 == 0x0 goto pc+40     ; R0_w=ptr_nf_conn(ref_obj_id=3) refs=3
+; unsigned long status = ct->status;
+125: (79) r6 = *(u64 *)(r0 +128)      ; R0_w=ptr_nf_conn(ref_obj_id=3) R6_w=scalar() refs=3
+; bpf_ct_release(ct);
+126: (bf) r1 = r0                     ; R0_w=ptr_nf_conn(ref_obj_id=3) R1_w=ptr_nf_conn(ref_obj_id=3) refs=3
+127: (85) call bpf_ct_release#140510          ;
+128: (b7) r0 = 2                      ; R0_w=2
+; if (status & IPS_CONFIRMED)
+129: (57) r6 &= 8                     ; R6_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=8,var_off=(0x0; 0x8))
+130: (79) r3 = *(u64 *)(r10 -64)      ; R3_w=0 R10=fp0 fp-64=0
+131: (15) if r6 == 0x0 goto pc+1 133: R0_w=2 R3_w=0 R6_w=0 R7=scalar(smin=umin=smin32=umin32=20,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R8=pkt(id=1,off=14,r=34,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R9=pkt(off=14,r=34) R10=fp0 fp-8=????mmmm fp-16=mmmmmmmm fp-24=????0 fp-32=0 fp-40=0 fp-48=mmmmmmmm fp-56=mmmmmmmm fp-64=0 fp-72=ctx()
+; if ((hdr->tcp->syn ^ hdr->tcp->ack) != 1)
+133: (69) r1 = *(u16 *)(r8 +12)       ; R1_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff)) R8=pkt(id=1,off=14,r=34,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+134: (77) r1 >>= 9                    ; R1_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=127,var_off=(0x0; 0x7f))
+; if ((hdr->tcp->syn ^ hdr->tcp->ack) != 1)
+135: (69) r2 = *(u16 *)(r8 +12)       ; R2_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff)) R8=pkt(id=1,off=14,r=34,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+136: (77) r2 >>= 12                   ; R2_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=15,var_off=(0x0; 0xf))
+; if ((hdr->tcp->syn ^ hdr->tcp->ack) != 1)
+137: (af) r2 ^= r1                    ; R1_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=127,var_off=(0x0; 0x7f)) R2_w=scalar()
+138: (57) r2 &= 1                     ; R2_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=1,var_off=(0x0; 0x1))
+139: (b7) r0 = 1                      ; R0=1
+; if ((hdr->tcp->syn ^ hdr->tcp->ack) != 1)
+140: (15) if r2 == 0x0 goto pc+32     ; R2=1
+141: (b7) r2 = 60                     ; R2_w=60
+; if (bpf_xdp_adjust_tail(ctx, TCP_MAXLEN - hdr->tcp_len))
+142: (1f) r2 -= r7                    ; R2_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=40,var_off=(0x0; 0x3c)) R7=scalar(smin=umin=smin32=umin32=20,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; if (bpf_xdp_adjust_tail(ctx, TCP_MAXLEN - hdr->tcp_len))
+143: (57) r2 &= 65535                 ; R2_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=40,var_off=(0x0; 0x3c))
+144: (79) r1 = *(u64 *)(r10 -72)      ; R1_w=ctx() R10=fp0 fp-72=ctx()
+145: (bf) r6 = r3                     ; R3=0 R6_w=0
+146: (85) call bpf_xdp_adjust_tail#65         ; R0_w=scalar()
+147: (bf) r5 = r6                     ; R5_w=0 R6_w=0
+148: (79) r2 = *(u64 *)(r10 -72)      ; R2_w=ctx() R10=fp0 fp-72=ctx()
+149: (bf) r1 = r0                     ; R0_w=scalar(id=4) R1_w=scalar(id=4)
+150: (b7) r0 = 0                      ; R0=0
+; if (bpf_xdp_adjust_tail(ctx, TCP_MAXLEN - hdr->tcp_len))
+151: (55) if r1 != 0x0 goto pc+21     ; R1=0
+; data = (void *)(long)ctx->data;
+152: (61) r1 = *(u32 *)(r2 +0)        ; R1_w=pkt(r=0) R2=ctx()
+; data_end = (void *)(long)ctx->data_end;
+153: (61) r3 = *(u32 *)(r2 +4)        ; R2=ctx() R3_w=pkt_end()
+; if (hdr->ipv4) {
+154: (15) if r9 == 0x0 goto pc+19     ; R9=scalar(umin=1)
+; if ((void *)hdr->ipv4 + IPV4_MAXLEN > data_end)
+155: (bf) r2 = r1                     ; R1_w=pkt(r=0) R2_w=pkt(r=0)
+156: (07) r2 += 74                    ; R2_w=pkt(off=74,r=0)
+; if ((void *)hdr->ipv4 + IPV4_MAXLEN > data_end)
+157: (2d) if r2 > r3 goto pc+15       ; R2_w=pkt(off=74,r=74) R3_w=pkt_end()
+; hdr->ipv4 = (void *)hdr->eth + sizeof(*hdr->eth);
+158: (07) r1 += 14                    ; R1_w=pkt(off=14,r=74)
+; hdr->tcp = (void *)hdr->ipv4 + hdr->ipv4->ihl * 4;
+159: (71) r4 = *(u8 *)(r1 +0)         ; R1_w=pkt(off=14,r=74) R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+; hdr->tcp = (void *)hdr->ipv4 + hdr->ipv4->ihl * 4;
+160: (67) r4 <<= 2                    ; R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=1020,var_off=(0x0; 0x3fc))
+161: (57) r4 &= 60                    ; R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; hdr->tcp = (void *)hdr->ipv4 + hdr->ipv4->ihl * 4;
+162: (bf) r2 = r1                     ; R1_w=pkt(off=14,r=74) R2_w=pkt(off=14,r=74)
+163: (0f) r2 += r4                    ; R2_w=pkt(id=5,off=14,r=0,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+164: (05) goto pc+15
+; if ((void *)hdr->tcp + TCP_MAXLEN > data_end)
+180: (bf) r4 = r2                     ; R2=pkt(id=5,off=14,r=0,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R4_w=pkt(id=5,off=14,r=0,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+181: (07) r4 += 60                    ; R4_w=pkt(id=5,off=74,r=0,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; if ((void *)hdr->tcp + TCP_MAXLEN > data_end)
+182: (2d) if r4 > r3 goto pc-10       ; R3=pkt_end() R4_w=pkt(id=5,off=74,r=74,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; hdr->tcp_len = hdr->tcp->doff * 4;
+183: (69) r7 = *(u16 *)(r2 +12)       ; R2=pkt(id=5,off=14,r=74,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R7_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff))
+; hdr->tcp_len = hdr->tcp->doff * 4;
+184: (77) r7 >>= 2                    ; R7_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=16383,var_off=(0x0; 0x3fff))
+185: (57) r7 &= 60                    ; R7_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+186: (b7) r3 = 20                     ; R3_w=20
+; if (hdr->tcp_len < sizeof(*hdr->tcp))
+187: (2d) if r3 > r7 goto pc-15       ; R3_w=20 R7_w=scalar(smin=umin=smin32=umin32=20,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; return hdr->tcp->syn ? syncookie_handle_syn(hdr, ctx, data, data_end, xdp) :
+188: (69) r3 = *(u16 *)(r2 +12)       ; R2=pkt(id=5,off=14,r=74,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R3_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff))
+; return hdr->tcp->syn ? syncookie_handle_syn(hdr, ctx, data, data_end, xdp) :
+189: (57) r3 &= 512                   ; R3=scalar(smin=smin32=0,smax=umax=smax32=umax32=512,var_off=(0x0; 0x200))
+190: (15) if r3 == 0x0 goto pc+18     ; R3=scalar(smin=umin=smin32=umin32=1,smax=umax=smax32=umax32=512,var_off=(0x0; 0x200))
+191: (b7) r1 = 0                      ; R1_w=0
+; __be32 * volatile tsopt = NULL;
+192: (7b) *(u64 *)(r10 -56) = r1      ; R1_w=0 R10=fp0 fp-56_w=0
+; bpf_printk("[boolasgn]: Current tcp_len: %u", current_tcp_len);
+193: (18) r1 = 0xffff9428456c4f5c     ; R1_w=map_value(map=xdp_synp.rodata,ks=4,vs=119,off=12)
+195: (b7) r2 = 32                     ; R2_w=32
+196: (bf) r3 = r7                     ; R3_w=scalar(id=6,smin=umin=smin32=umin32=20,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R7=scalar(id=6,smin=umin=smin32=umin32=20,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+197: (85) call bpf_trace_printk#6     ; R0_w=scalar()
+; bpf_printk("[boolasgn]: Initial processed_len: %u", processed_len);
+198: (18) r1 = 0xffff9428456c4f7c     ; R1_w=map_value(map=xdp_synp.rodata,ks=4,vs=119,off=44)
+200: (b7) r2 = 38                     ; R2_w=38
+201: (b7) r3 = 0                      ; R3_w=0
+202: (85) call bpf_trace_printk#6     ; R0=scalar()
+; bpf_printk("[boolasgn]: processed_len is now: %u", processed_len);
+203: (18) r1 = 0xffff9428456c4fa2     ; R1_w=map_value(map=xdp_synp.rodata,ks=4,vs=119,off=82)
+205: (b7) r2 = 37                     ; R2_w=37
+206: (bf) r3 = r7                     ; R3_w=scalar(id=6,smin=umin=smin32=umin32=20,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R7=scalar(id=6,smin=umin=smin32=umin32=20,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+207: (85) call bpf_trace_printk#6     ; R0_w=scalar()
+; while (processed_len = current_tcp_len) {
+208: (05) goto pc-6
+; bpf_printk("[boolasgn]: processed_len is now: %u", processed_len);
+infinite loop detected at insn 203
+cur state: R0_w=scalar() R6=0 R7=scalar(id=6,smin=umin=smin32=umin32=20,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R8=scalar() R9=scalar(umin=1) R10=fp0 fp-8=????mmmm fp-16=mmmmmmmm fp-24=????0 fp-32=0 fp-40=0 fp-48=mmmmmmmm fp-56=0 fp-64=0 fp-72=ctx()
+old state: R0_w=scalar() R6=0 R7_r=scalar(id=6,smin=umin=smin32=umin32=20,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R8=scalar() R9=scalar(umin=1) R10=fp0 fp-8=????mmmm fp-16=mmmmmmmm fp-24=????0 fp-32=0 fp-40=0 fp-48=mmmmmmmm fp-56_w=0 fp-64=0 fp-72=ctx()
+processed 145 insns (limit 1000000) max_states_per_insn 0 total_states 11 peak_states 11 mark_read 5
+
+[96m#######################
+[96m## Prettier Verifier ##
+[96m#######################
+
+[91merror[0m: [94mInfinite loop detected[0m
+    bpf_printk("[boolasgn]: processed_len is now: %u", processed_len) | 
+                                                                      | in file ; bpf_printk("[boolasgn]: processed_len is now: %u", processed_len);
+
+[92mYou may add #pragma unroll before the for loop line[0m
+
+-- END PROG LOAD LOG --
+libbpf: prog 'syncookie_xdp': failed to load: -22
+libbpf: failed to load object '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy/xdp_synproxy_kern.bpf.o'
+Error: failed to load object file

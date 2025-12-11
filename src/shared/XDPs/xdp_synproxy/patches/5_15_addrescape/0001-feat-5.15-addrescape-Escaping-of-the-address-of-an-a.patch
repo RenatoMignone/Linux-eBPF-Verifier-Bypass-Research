@@ -1,0 +1,40 @@
+From bd9af8403decc3b004449b1450078da51000671c Mon Sep 17 00:00:00 2001
+From: Giorgio <s331003@studenti.polito.it>
+Date: Thu, 17 Jul 2025 22:12:22 +0000
+Subject: [PATCH] feat(5.15 addrescape) Escaping of the address of an automatic
+ object
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..63c6b30 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -753,11 +753,22 @@ static __always_inline int syncookie_handle_ack(struct header_pointers *hdr)
+ 	return XDP_PASS;
+ }
+ 
++//Start test
++static __always_inline void set_pointer(char **ptr_param)
++{
++	char str[] = "TEst1"; //Allocate in local var random string
++	*ptr_param = str; //point pointer from arg at the random string
++}
++
+ static __always_inline int syncookie_part1(void *ctx, void *data, void *data_end,
+ 					   struct header_pointers *hdr, bool xdp)
+ {
+ 	int ret;
+ 
++	char *ptr; //Target for str
++	set_pointer(&ptr); //This executes but when the function returns
++	bpf_printk("Res: %s", ptr); //The local var str is deallocated so prints nothing 
++
+ 	ret = tcp_dissect(data, data_end, hdr);
+ 	if (ret != XDP_TX)
+ 		return ret;
+-- 
+2.43.0
+

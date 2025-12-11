@@ -1,0 +1,171 @@
+From 14b5178c9c4cb05b0c12f67f601836f89ffc8a53 Mon Sep 17 00:00:00 2001
+From: mood <74420740+no-mood@users.noreply.github.com>
+Date: Mon, 21 Jul 2025 14:50:13 +0200
+Subject: [PATCH] feat(5.17 swtchdflt): A switch statement with a controlling
+ expression of enumerated type that does not include a default case and does
+ not include cases for all enumeration constants of that type.
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 115 +++++++++++++++++++++++++-
+ 1 file changed, 114 insertions(+), 1 deletion(-)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..7a2d05a 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -1,6 +1,35 @@
+ // SPDX-License-Identifier: LGPL-2.1 OR BSD-2-Clause
+ /* Copyright (c) 2022, NVIDIA CORPORATION & AFFILIATES. All rights reserved. */
+ 
++/* PATCH 5.17: Use of an implied default in a switch statement [swtchdflt]
++ *
++ * This patch demonstrates Rule 5.17 from ISO-IEC TS 17961-2013:
++ * "A switch statement with a controlling expression of enumerated type that does not include a default
++ * case and does not include cases for all enumeration constants of that type shall be diagnosed."
++ *
++ * VULNERABILITY SCENARIO:
++ * In this firewall/filtering eBPF program, we define an enumeration for packet actions that might be
++ * taken by the firewall. Initially, the enumeration has 4 values: ALLOW, BLOCK, REDIRECT, and LOG.
++ * However, the switch statement that processes these actions only handles 3 of the 4 cases (missing REDIRECT),
++ * and does not include a default case.
++ *
++ * SECURITY IMPLICATIONS:
++ * - If a packet is classified with the REDIRECT action, the switch falls through with undefined behavior
++ * - This could lead to packets being processed incorrectly or security rules being bypassed
++ * - When new action types are added to the enumeration (common in evolving firewall rules),
++ *   the compiler should warn about incomplete switch coverage
++ *
++ * REAL-WORLD CONTEXT:
++ * This scenario is realistic in network filtering where:
++ * - Firewall rules evolve over time with new action types
++ * - Different packet types may require different handling actions
++ * - Missing cases can lead to security policy violations
++ *
++ * EXPECTED COMPILER BEHAVIOR:
++ * Modern C compilers with -Wswitch or -Wswitch-enum should emit a diagnostic warning
++ * about the incomplete switch statement missing the REDIRECT case and lacking a default.
++ */
++
+ #include "vmlinux.h"
+ 
+ #include <bpf/bpf_helpers.h>
+@@ -55,6 +84,14 @@
+ 
+ #define MAX_PACKET_OFF 0xffff
+ 
++/* Enumeration for firewall packet actions - demonstrates Rule 5.17 vulnerability */
++enum firewall_action {
++	FIREWALL_ALLOW,    /* Allow packet to pass through */
++	FIREWALL_BLOCK,    /* Drop/block the packet */
++	FIREWALL_REDIRECT, /* Redirect packet to different destination */
++	FIREWALL_LOG       /* Log packet and continue processing */
++};
++
+ #define swap(a, b) \
+ 	do { typeof(a) __tmp = (a); (a) = (b); (b) = __tmp; } while (0)
+ 
+@@ -212,6 +249,8 @@ static __always_inline u8 *next(struct tcpopt_context *ctx, __u32 sz)
+ 	return data;
+ }
+ 
++
++
+ static int tscookie_tcpopt_parse(struct tcpopt_context *ctx)
+ {
+ 	__u8 *opcode, *opsize, *wscale, *tsecr;
+@@ -370,9 +409,28 @@ struct header_pointers {
+ 	__u16 tcp_len;
+ };
+ 
++/* VULNERABLE FUNCTION - Rule 5.17: Incomplete switch statement with enumerated type
++ *
++ * This modified tcp_dissect function demonstrates Rule 5.17 vulnerability by adding
++ * firewall action classification based on destination ports during packet dissection.
++ *
++ * VULNERABILITY: After parsing TCP headers, the function determines a firewall action
++ * based on destination port, then processes it with an incomplete switch statement
++ * that handles only 3 out of 4 enumeration values (missing FIREWALL_REDIRECT case)
++ * and lacks a default case.
++ *
++ * REALISTIC INTEGRATION: This shows how Rule 5.17 vulnerabilities can appear in
++ * real network processing code where packet classification and action processing
++ * are integrated into the main parsing flow.
++ */
+ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 				       struct header_pointers *hdr)
+ {
++	enum firewall_action action;
++	__u32 action_count_key = 0;
++	__u64 *action_count;
++	__u16 dest_port;
++
+ 	hdr->eth = data;
+ 	if (hdr->eth + 1 > data_end)
+ 		return XDP_DROP;
+@@ -422,7 +480,62 @@ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 	if (hdr->tcp_len < sizeof(*hdr->tcp))
+ 		return XDP_DROP;
+ 
+-	return XDP_TX;
++	/* ADDED: Firewall classification logic integrated into tcp_dissect
++	 * This demonstrates how Rule 5.17 vulnerabilities can appear in real parsing code */
++	dest_port = bpf_ntohs(hdr->tcp->dest);
++
++	/* Classify packet based on destination port */
++	if (dest_port == 80 || dest_port == 443) {
++		/* Web traffic - typically allowed */
++		action = FIREWALL_ALLOW;
++	} else if (dest_port >= 1024 && dest_port < 5000) {
++		/* High ports - often blocked */
++		action = FIREWALL_BLOCK;
++	} else if (dest_port >= 8000 && dest_port < 9000) {
++		/* Proxy/redirect range - THIS TRIGGERS THE VULNERABILITY! */
++		action = FIREWALL_REDIRECT;
++	} else {
++		/* Everything else - log for analysis */
++		action = FIREWALL_LOG;
++	}
++
++	/* Update action statistics */
++	action_count = bpf_map_lookup_elem(&values, &action_count_key);
++	if (action_count)
++		(*action_count)++;
++
++	/* VULNERABILITY: Switch statement missing FIREWALL_REDIRECT case and default case
++	 * This violates Rule 5.17 - compiler should diagnose incomplete enumeration coverage */
++	switch (action) {
++	case FIREWALL_ALLOW:
++		/* Allow packet - continue with normal processing */
++		bpf_printk("Firewall: Allowing packet to port %d", dest_port);
++		return XDP_TX;  /* Continue with SYN proxy processing */
++
++	case FIREWALL_BLOCK:
++		/* Block/drop the packet */
++		bpf_printk("Firewall: Blocking packet to port %d", dest_port);
++		return XDP_DROP;
++
++	case FIREWALL_LOG:
++		/* Log packet information and continue processing */
++		bpf_printk("Firewall: Logging packet to port %d", dest_port);
++		return XDP_TX;  /* Continue with SYN proxy processing */
++
++	/* MISSING CASE: FIREWALL_REDIRECT - this is the vulnerability!
++	 * When action == FIREWALL_REDIRECT (ports 8000-8999), execution falls through
++	 * past the switch with undefined behavior. The function may return garbage or 0.
++	 *
++	 * MISSING: default case - should handle unexpected enumeration values
++	 */
++	}
++
++	/* If we reach here due to missing FIREWALL_REDIRECT case, behavior is undefined.
++	 * In this eBPF context, returning 0 might be interpreted as XDP_ABORTED,
++	 * which could cause packet drops or other unintended consequences.
++	 * This demonstrates how Rule 5.17 violations can cause security issues. */
++	bpf_printk("Firewall: UNDEFINED BEHAVIOR - missing case for port %d!", dest_port);
++	return 0; /* Undefined behavior - could be XDP_ABORTED */
+ }
+ 
+ static __always_inline int tcp_lookup(void *ctx, struct header_pointers *hdr, bool xdp)
+-- 
+2.49.0
+

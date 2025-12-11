@@ -1,0 +1,133 @@
+From ddd2ce7c83a2bac4956964e743f728536b3c7292 Mon Sep 17 00:00:00 2001
+From: mood <74420740+no-mood@users.noreply.github.com>
+Date: Tue, 22 Jul 2025 19:32:33 +0200
+Subject: [PATCH] feat(5.36c ptrobj): Subtracting or relationally comparing two
+ pointers that do not refer to the same array object, or one element past the
+ same array object, shall be diagnosed. The relational operators are >, <, >=,
+ and <=.
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 84 ++++++++++++++++++++++++++-
+ 1 file changed, 83 insertions(+), 1 deletion(-)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..2f1d2e7 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -1,6 +1,29 @@
+ // SPDX-License-Identifier: LGPL-2.1 OR BSD-2-Clause
+ /* Copyright (c) 2022, NVIDIA CORPORATION & AFFILIATES. All rights reserved. */
+ 
++/* PATCH 5.36c: Subtracting or comparing pointers from different array objects [ptrobj] - Map Pointers Case
++ *
++ * This patch demonstrates Rule 5.36 from ISO-IEC TS 17961-2013:
++ * "Subtracting or relationally comparing two pointers that do not refer to the same array object,
++ * or one element past the same array object, shall be diagnosed."
++ *
++ * VULNERABILITY DEMONSTRATION - MAP POINTERS vs PACKET DATA:
++ * This specific test focuses on violations between:
++ * 1. eBPF map value pointers (heap objects from bpf_map_lookup_elem)
++ * 2. Packet data pointers (network buffer from ctx->data)
++ * 3. Pointers from different map types (array vs hash maps)
++ *
++ * The bug: accidentally comparing/subtracting pointers from map values
++ * with packet data, treating them as if they're in the same memory object.
++ *
++ * REALISTIC SCENARIO:
++ * During packet processing, mistakenly perform arithmetic between map lookup
++ * results and packet data, or between values from different map types.
++ *
++ * EXPECTED eBPF VERIFIER BEHAVIOR:
++ * Should diagnose pointer operations between map heap objects and packet buffer objects.
++ */
++
+ #include "vmlinux.h"
+ 
+ #include <bpf/bpf_helpers.h>
+@@ -79,6 +102,14 @@ struct {
+ 	__uint(max_entries, MAX_ALLOWED_PORTS);
+ } allowed_ports SEC(".maps");
+ 
++/* Additional hash map for 5.36c testing - different map type */
++struct {
++	__uint(type, BPF_MAP_TYPE_HASH);
++	__type(key, __u32);
++	__type(value, __u64);
++	__uint(max_entries, 1024);
++} test_hash_map SEC(".maps");
++
+ /* Some symbols defined in net/netfilter/nf_conntrack_bpf.c are unavailable in
+  * vmlinux.h if CONFIG_NF_CONNTRACK=m, so they are redefined locally.
+  */
+@@ -370,9 +401,18 @@ struct header_pointers {
+ 	__u16 tcp_len;
+ };
+ 
++/* VULNERABLE FUNCTION - Rule 5.36: Minimal demonstration of cross-object pointer arithmetic
++ *
++ * This function shows the simplest case: comparing and subtracting pointers from
++ * different objects (packet data vs. local stack array).
++ */
+ static __always_inline int tcp_dissect(void *data, void *data_end,
+-				       struct header_pointers *hdr)
++			       struct header_pointers *hdr)
+ {
++	/* Map lookups - these are OBJECT 1 and 2 (heap objects) */
++	__u32 array_key = 0;
++	__u32 hash_key = 42;
++
+ 	hdr->eth = data;
+ 	if (hdr->eth + 1 > data_end)
+ 		return XDP_DROP;
+@@ -422,6 +462,48 @@ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 	if (hdr->tcp_len < sizeof(*hdr->tcp))
+ 		return XDP_DROP;
+ 
++	/* VULNERABILITY 1: Map value pointer vs packet data pointer
++	 * Map values are heap objects (OBJECT 1: eBPF map memory)
++	 * Packet data is network buffer (OBJECT 2: packet buffer)
++	 * These are COMPLETELY DIFFERENT objects! */
++	__u64 *array_value = bpf_map_lookup_elem(&values, &array_key);
++	if (array_value) {
++		/* VIOLATION: Compare map value pointer with packet data */
++		if ((void *)array_value > data) { // diagnostic required - different objects!
++			bpf_printk("5.36c MAP: array map value %p > packet data %p", array_value, data);
++		}
++
++		/* VULNERABILITY 2: Subtract pointers from different objects */
++		ptrdiff_t map_distance = (char *)array_value - (char *)data; // diagnostic required
++		bpf_printk("5.36c MAP: Distance map->packet: %td", map_distance);
++
++		/* VULNERABILITY 3: All relational operators with different objects */
++		if ((void *)array_value < data_end) { // diagnostic required
++			bpf_printk("5.36c MAP: map value %p < packet_end %p", array_value, data_end);
++		}
++
++		/* DANGER: Use undefined result in program logic */
++		if (map_distance != 0) { // Undefined behavior in conditional!
++			bpf_printk("5.36c CRITICAL: Program logic based on undefined map arithmetic!");
++		}
++	}
++
++	/* VULNERABILITY 4: Different map types comparison
++	 * Compare pointers from different map types - definitely different heap objects! */
++	__u64 *hash_value = bpf_map_lookup_elem(&test_hash_map, &hash_key);
++	__u16 *port_value = bpf_map_lookup_elem(&allowed_ports, &array_key);
++	
++	if (hash_value && port_value) {
++		/* VIOLATION: Compare pointers from different maps */
++		if ((void *)hash_value > (void *)port_value) { // diagnostic required - different map objects!
++			bpf_printk("5.36c MULTI_MAP: hash map %p > array map %p", hash_value, port_value);
++		}
++		
++		/* VIOLATION: Subtract pointers from different maps */
++		ptrdiff_t multi_map_distance = (char *)hash_value - (char *)port_value; // diagnostic required
++		bpf_printk("5.36c MULTI_MAP: Distance between maps: %td", multi_map_distance);
++	}
++
+ 	return XDP_TX;
+ }
+ 
+-- 
+2.50.1
+

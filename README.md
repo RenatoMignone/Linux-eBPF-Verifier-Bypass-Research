@@ -506,7 +506,23 @@ Understanding the distinction between the previous team's work and mine is cruci
 
 ### Their Testing Environment
 
-The team created an isolated VM-based testing environment to safely test eBPF programs without risking the host system.
+
+The previous team implemented a **full client-server architecture** for practical eBPF/XDP vulnerability testing. Their setup allows you to:
+
+- Run a netcat server and client on separate hosts (or host and VM), with the XDP SynProxy eBPF program acting as a proxy in the middle.
+- Use the `start_session.sh` script to launch a tmux session that sets up:
+  - The XDP SynProxy loader (attaches the eBPF program to the network interface)
+  - A netcat server (listening for TCP connections)
+  - Kernel trace output (for debugging and observing eBPF behavior)
+- Simulate real network communication, with the XDP SynProxy program intercepting and processing packets between the client and server.
+
+This architecture enables you to test how injected vulnerabilities in the eBPF program can be exploited via network packets, providing a realistic and interactive environment for security research.
+
+**How it works in practice:**
+- The netcat server is always running on the VM, listening for incoming TCP connections on port 80.
+- The XDP SynProxy eBPF program is attached to the VM's network interface and intercepts all incoming packets before they reach the server.
+- You use a netcat client (typically from your host machine) to connect to the VM's IP and port 80, sending crafted network packets.
+- This setup allows you to observe how the XDP program processes, blocks, or is potentially exploited by these packets.
 
 <p align="center">
   <img src="resources/images/VM_Structure.jpg" width="700">
@@ -902,7 +918,14 @@ Project_EBPF/
 
 ## My Objective
 
-Transform the theoretical exploitability assessments into **functional Proof of Concept exploits** targeting the **LTS 6.8 kernel**.
+
+My work **builds directly on this existing client-server/XDP SynProxy architecture**. Since the XDP program operates at the network interface, having two hosts (client and server) communicating through the proxy is essential for realistic exploitation.
+
+**My objective:**
+- Leverage the previous team's infrastructure to perform practical exploitation.
+- Use network packets as the attack vector: generate and send them from a netcat client (on the host) to the netcat server (on the VM), with the XDP SynProxy eBPF program in the middle.
+- Trigger and exploit vulnerabilities injected into the XDP interface via eBPF patches, by crafting specific network traffic.
+- Demonstrate, with real network traffic, which vulnerabilities are exploitable in practice and document the exploitation process.
 
 ### Goals
 
@@ -947,7 +970,105 @@ cd xvtlas/
          --base-file "./xdp_synproxy_kern.c"
 ```
 
+
+## Practical Exploitation Workflow: Step-by-Step
+### Prerequisite: Automated Extraction of vmlinux.h for eBPF Compilation
+
+Before compiling the XDP SynProxy eBPF program, the `vmlinux.h` header is automatically generated from your running kernel's BTF data by the session script. This file provides all kernel type definitions needed for CO-RE (Compile Once, Run Everywhere) eBPF development.
+
+**Automated vmlinux.h extraction:**
+
+The following command is run automatically by `start_session.sh` before compilation:
+
+```bash
+sudo bpftool btf dump file /sys/kernel/btf/vmlinux format c > /mnt/shared/XDPs/xdp_synproxy/vmlinux.h
+```
+
+You only need to run `make` in `/mnt/shared/XDPs/xdp_synproxy` after starting the VM and session script. If your shared folder path is different, adjust the output path accordingly.
+
+**Why is this needed?**
+- The eBPF kernel program uses CO-RE features and requires accurate kernel type definitions.
+- If `vmlinux.h` is missing, compilation will fail with an error about the missing file.
+
 ---
+
+This section explains the **full process** for exploiting eBPF verifier vulnerabilities using the inherited infrastructure, including how the Makefile, scripts, and tmux sessions fit together. It also clarifies the difference between the previous team's theoretical work and the practical exploitation phase.
+
+### 1. Compilation and Loading: The Role of the Makefile
+
+The Makefile in `ebpf-exploitability-test/codebase/XDPs/xdp_synproxy/` is responsible for compiling:
+  - The eBPF kernel program (`xdp_synproxy_kern.c`) into bytecode (`xdp_synproxy_kern.bpf.o`)
+  - The user-space loader (`xdp_synproxy.c`) into an executable (`xdp_synproxy`)
+
+**Workflow:**
+1. Run `make` in the target folder to build both binaries.
+2. The user-space loader is run with `sudo` to load the eBPF program into the kernel. The eBPF verifier automatically checks the code at load time.
+3. If the code passes, it is loaded and runs in the kernel; if not, it is rejected.
+
+### 2. Applying Vulnerability Patches
+
+The previous team provided 60+ patches, each injecting a specific vulnerability (based on ISO-IEC TS 17961-2013) into the base code. These patches are applied using `git apply`:
+
+```bash
+git apply patches/<patch-folder>/<patch-file>.patch
+make clean && make
+```
+
+This allows you to test if the eBPF verifier blocks or accepts the vulnerable code.
+
+### 3. Setting Up the Test Environment: tmux Sessions and Scripts
+
+The `start_session.sh` script in the same folder sets up a multi-pane tmux session for interactive testing:
+  - **Pane 1:** Runs the XDP SynProxy loader (`sudo ./xdp_synproxy ...`) to attach the eBPF program to the network interface.
+  - **Pane 2:** Starts a netcat server (`sudo nc -lvnp 80`) to listen for TCP connections.
+  - **Pane 3:** Shows kernel debug output (`sudo cat /sys/kernel/debug/tracing/trace_pipe`).
+
+This environment allows you to:
+  - Observe how the eBPF program processes packets
+  - See the effects of injected vulnerabilities
+  - Test exploitation by sending crafted packets from a client (e.g., using netcat from the host)
+
+### 4. Exploitation: Client-Server Interaction
+
+After the tmux session is running:
+  - The netcat server listens for incoming TCP connections.
+  - The client (your host machine or another VM) connects using netcat:
+    ```bash
+    nc <VM_IP> 80 -v
+    ```
+  - This simulates an attacker sending packets to exploit the loaded eBPF program.
+  - The kernel trace and server output help you observe if the vulnerability is exploitable.
+
+### 5. Theoretical vs. Practical: What Changes
+
+**Previous Team (Theoretical):**
+  - Catalogued vulnerabilities and tested if the eBPF verifier would block them.
+  - Did not attempt real exploitation or privilege escalation.
+
+**Your Work (Practical):**
+  - Apply patches, compile, and load the code.
+  - Use the tmux session to simulate real attacks and observe kernel impact.
+  - Document which vulnerabilities are truly exploitable in practice.
+
+### 6. Automation Tools
+
+The `xvtlas` tool (Go-based) can automate patch application, compilation, loading, and result collection for batch testing.
+
+---
+
+## Summary of Practical Exploitation Steps
+
+1. **Start the VM** using `vmctl.sh` and connect.
+2. **Compile the base or patched code** with `make`.
+3. **Load the eBPF program** using the user-space loader (verifier checks it automatically).
+4. **Start the tmux session** with `start_session.sh`.
+5. **Simulate client attacks** using netcat from the host.
+6. **Observe results** in tmux panes and kernel trace.
+7. **Document findings**: Did the verifier block the vulnerability? Was it exploitable?
+
+---
+
+This workflow bridges the gap between theoretical vulnerability assessment and practical exploitation, providing a reproducible, automated environment for eBPF security research.
 
 ## Progress Tracking
 

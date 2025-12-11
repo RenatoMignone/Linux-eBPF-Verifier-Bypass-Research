@@ -1,0 +1,24 @@
+make: Entering directory '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy'
+clang -O2 -g -Wall -target bpf -I. -I../tools -I.. -I/usr/include/bpf -I/usr/include/x86_64-linux-gnu/linux -D__TARGET_ARCH_x86 -c xdp_synproxy_kern.c -o xdp_synproxy_kern.bpf.o
+xdp_synproxy_kern.c:208:16: warning: comparison of distinct pointer types ('__u8 *' (aka 'unsigned char *') and 'void *') [-Wcompare-distinct-pointer-types]
+  208 |         if (data + sz >= ctx->data_end)
+      |             ~~~~~~~~~ ^  ~~~~~~~~~~~~~
+xdp_synproxy_kern.c:377:19: warning: comparison of distinct pointer types ('struct ethhdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  377 |         if (hdr->eth + 1 > data_end)
+      |             ~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:385:21: warning: comparison of distinct pointer types ('struct iphdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  385 |                 if (hdr->ipv4 + 1 > data_end)
+      |                     ~~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:401:21: warning: comparison of distinct pointer types ('struct ipv6hdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  401 |                 if (hdr->ipv6 + 1 > data_end)
+      |                     ~~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:419:19: warning: comparison of distinct pointer types ('struct tcphdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  419 |         if (hdr->tcp + 1 > data_end)
+      |             ~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:449:35: warning: passing arguments to a function without a prototype is deprecated in all versions of C and is not supported in C23 [-Wdeprecated-non-prototype]
+  449 |         __u16 csum_result = fp_wrong_type(0x12345678, 0x9abcdef0);  // Called with wrong args
+      |                                          ^
+6 warnings generated.
+Compiling user-space program: xdp_synproxy
+clang -O2 -g -Wall -I. -I../tools -I.. -I/usr/include/bpf -I/usr/include -I/usr/include/x86_64-linux-gnu/linux -lbpf -lbfd -lelf -lz -lcap -lmnl  xdp_synproxy.c -o xdp_synproxy
+make: Leaving directory '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy'

@@ -1,0 +1,36 @@
+From 9fbfc088844641b6fa605254e2741408bb9723bf Mon Sep 17 00:00:00 2001
+From: Gianfranco Trad <gianf.trad@gmail.com>
+Date: Fri, 29 Aug 2025 15:35:47 +0200
+Subject: [PATCH] feat: ptrcomp 5.01b
+
+Signed-off-by: Gianfranco Trad <gianf.trad@gmail.com>
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..25fd6fc 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -376,7 +376,17 @@ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 	hdr->eth = data;
+ 	if (hdr->eth + 1 > data_end)
+ 		return XDP_DROP;
+-
++	/* 
++     * UB Injection 2: Reinterpreting Ethernet header as TCP header.
++     * This violates strict aliasing rules because the Ethernet header
++     * is accessed as a TCP header, which is an incompatible type.
++     * This results in undefined behavior.
++     */
++    struct tcphdr *fake_tcp = (struct tcphdr *)hdr->eth;
++    __u16 fake_src_port = fake_tcp->source;
++	
++    if (fake_src_port == 0)
++        return XDP_DROP;
+ 	switch (bpf_ntohs(hdr->eth->h_proto)) {
+ 	case ETH_P_IP:
+ 		hdr->ipv6 = NULL;
+-- 
+2.43.0
+

@@ -1,0 +1,49 @@
+From dbc1e18e8edd1510fe2b58ca15242fc659af016f Mon Sep 17 00:00:00 2001
+From: Giorgio <s331003@studenti.polito.it>
+Date: Fri, 18 Jul 2025 21:23:45 +0000
+Subject: [PATCH] feat(5.28 strmod) modifying string literals
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..21e1d63 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -753,6 +753,23 @@ static __always_inline int syncookie_handle_ack(struct header_pointers *hdr)
+ 	return XDP_PASS;
+ }
+ 
++//Begin test function
++/* The standard specifies that string literals should be constant 
++ * for memory safety reasons.
++ * This shoudl generate at least a compiler error/warning
++ */
++
++static __always_inline void setStringIndex(__u32 loc)
++{
++	bpf_printk("Inside set index");
++	char *str_literal = "This is a string literal";
++	//Try to modify the string literal
++	bpf_printk("loc : %u", loc / 100000000);
++	str_literal[loc / 100000000] = 'A'; //Trying to modify a string should be picked up by the verifier
++	bpf_printk("String : %s", str_literal); //verifier is silent but the string is not modified
++	return;
++}
++
+ static __always_inline int syncookie_part1(void *ctx, void *data, void *data_end,
+ 					   struct header_pointers *hdr, bool xdp)
+ {
+@@ -766,6 +783,8 @@ static __always_inline int syncookie_part1(void *ctx, void *data, void *data_end
+ 	if (ret != XDP_TX)
+ 		return ret;
+ 
++	setStringIndex(hdr->tcp->seq);
++
+ 	/* Packet is TCP and doesn't belong to an established connection. */
+ 
+ 	if ((hdr->tcp->syn ^ hdr->tcp->ack) != 1)
+-- 
+2.43.0
+

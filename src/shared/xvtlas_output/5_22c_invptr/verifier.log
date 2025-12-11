@@ -1,0 +1,35 @@
+libbpf: prog 'syncookie_xdp': BPF program load failed: Permission denied
+libbpf: prog 'syncookie_xdp': -- BEGIN PROG LOAD LOG --
+0: R1=ctx() R10=fp0
+; int syncookie_xdp(struct xdp_md *ctx)
+0: (b7) r8 = 1                        ; R8_w=1
+; void *data_end = (void *)(long)ctx->data_end;
+1: (61) r9 = *(u32 *)(r1 +4)          ; R1=ctx() R9_w=pkt_end()
+2: (7b) *(u64 *)(r10 -72) = r1        ; R1=ctx() R10=fp0 fp-72_w=ctx()
+; void *data = (void *)(long)ctx->data;
+3: (61) r6 = *(u32 *)(r1 +0)          ; R1=ctx() R6_w=pkt(r=0)
+; if (hdr->eth + 1 > data_end)
+4: (bf) r7 = r6                       ; R6_w=pkt(r=0) R7_w=pkt(r=0)
+5: (07) r7 += 14                      ; R7_w=pkt(off=14,r=0)
+; if (hdr->eth + 1 > data_end)
+6: (2d) if r7 > r9 goto pc+177        ; R7_w=pkt(off=14,r=14) R9_w=pkt_end()
+; __u16 invalid_value = *(tcp_ports + 10);
+7: (69) r3 = *(u16 *)(r1 +0)
+invalid bpf_context access off=0 size=2
+processed 8 insns (limit 1000000) max_states_per_insn 0 total_states 0 peak_states 0 mark_read 0
+
+[96m#######################
+[96m## Prettier Verifier ##
+[96m#######################
+
+[91merror[0m: [94mInvalid access to context parameter[0m
+   382 | __u16 invalid_value = *(tcp_ports + 10);
+       | in file /home/user/ebpf-tests-3-1/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+Cannot read or write in the context parameter for the xdp program type
+
+[92mhttps://docs.ebpf.io/linux/program-type/ has a detailed table on which fields of the context, for each program type, can be read or written, in the "Context/Context fields section".[0m
+
+-- END PROG LOAD LOG --
+libbpf: prog 'syncookie_xdp': failed to load: -13
+libbpf: failed to load object '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy/xdp_synproxy_kern.bpf.o'
+Error: failed to load object file

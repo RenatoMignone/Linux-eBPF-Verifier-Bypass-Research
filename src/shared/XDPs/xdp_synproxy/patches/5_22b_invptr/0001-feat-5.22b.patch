@@ -1,0 +1,28 @@
+From eff74e2a02c533c922f574a4dcfe25c5b8aac467 Mon Sep 17 00:00:00 2001
+From: Gianfranco Trad <s323713@studenti.polito.it>
+Date: Fri, 29 Aug 2025 18:47:03 +0000
+Subject: [PATCH] feat: 5.22b
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..5d20e11 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -377,6 +377,11 @@ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 	if (hdr->eth + 1 > data_end)
+ 		return XDP_DROP;
+ 
++	/* UB Injection: Pointer arithmetic beyond array bounds */
++	__u16 *tcp_ports = (__u16 *)&hdr->tcp->source; 
++	__u16 *invalid_ptr = tcp_ports + 10;          
++	bpf_printk("[invptr-1]: Invalid pointer value: %p", invalid_ptr);
++
+ 	switch (bpf_ntohs(hdr->eth->h_proto)) {
+ 	case ETH_P_IP:
+ 		hdr->ipv6 = NULL;
+-- 
+2.43.0
+

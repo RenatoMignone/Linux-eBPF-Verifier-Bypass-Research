@@ -1,0 +1,103 @@
+From 54d1123425e15ef56f55e9671f2c3c5d15dd9f87 Mon Sep 17 00:00:00 2001
+From: mood <74420740+no-mood@users.noreply.github.com>
+Date: Tue, 22 Jul 2025 19:32:33 +0200
+Subject: [PATCH] feat(5.36a ptrobj): Subtracting or relationally comparing two
+ pointers that do not refer to the same array object, or one element past the
+ same array object, shall be diagnosed. The relational operators are >, <, >=,
+ and <=.
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 61 ++++++++++++++++++++++++++-
+ 1 file changed, 60 insertions(+), 1 deletion(-)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..f533800 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -1,6 +1,28 @@
+ // SPDX-License-Identifier: LGPL-2.1 OR BSD-2-Clause
+ /* Copyright (c) 2022, NVIDIA CORPORATION & AFFILIATES. All rights reserved. */
+ 
++/* PATCH 5.36a: Subtracting or comparing pointers from different array objects [ptrobj] - Local Buffer Case
++ *
++ * This patch demonstrates Rule 5.36 from ISO-IEC TS 17961-2013:
++ * "Subtracting or relationally comparing two pointers that do not refer to the same array object,
++ * or one element past the same array object, shall be diagnosed."
++ *
++ * VULNERABILITY DEMONSTRATION - LOCAL BUFFER vs PACKET DATA:
++ * This specific test focuses on violations between:
++ * 1. Packet data pointers (network buffer from ctx->data)
++ * 2. Local stack buffer (temporary array on function stack)
++ *
++ * The bug: accidentally comparing/subtracting pointers thinking the local buffer
++ * and packet data are part of the same memory object when they're completely separate.
++ *
++ * REALISTIC SCENARIO:
++ * During packet parsing, mistakenly calculate "distance" between packet data
++ * and a local temporary buffer, assuming they're in the same memory region.
++ *
++ * EXPECTED eBPF VERIFIER BEHAVIOR:
++ * Should diagnose pointer subtraction/comparison between these different array objects.
++ */
++
+ #include "vmlinux.h"
+ 
+ #include <bpf/bpf_helpers.h>
+@@ -370,9 +392,17 @@ struct header_pointers {
+ 	__u16 tcp_len;
+ };
+ 
++/* VULNERABLE FUNCTION - Rule 5.36: Minimal demonstration of cross-object pointer arithmetic
++ *
++ * This function shows the simplest case: comparing and subtracting pointers from
++ * different objects (packet data vs. local stack array).
++ */
+ static __always_inline int tcp_dissect(void *data, void *data_end,
+-				       struct header_pointers *hdr)
++			       struct header_pointers *hdr)
+ {
++	/* Local stack array - this is OBJECT 1 */
++	char local_buffer[64];
++
+ 	hdr->eth = data;
+ 	if (hdr->eth + 1 > data_end)
+ 		return XDP_DROP;
+@@ -422,6 +452,35 @@ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 	if (hdr->tcp_len < sizeof(*hdr->tcp))
+ 		return XDP_DROP;
+ 
++	/* Initialize local buffer */
++	local_buffer[0] = 0xAA;
++
++	/* VULNERABILITY 1: Compare pointers from different objects
++	 * hdr->eth points to packet data (OBJECT 1: network buffer)
++	 * local_buffer is a stack array (OBJECT 2: local stack)
++	 * These are COMPLETELY DIFFERENT objects! */
++	if ((char *)hdr->eth != local_buffer) { // diagnostic required - always true, always undefined!
++		bpf_printk("VULNERABILITY: Comparing packet data %p != local buffer %p",
++		           hdr->eth, local_buffer);
++
++		/* VULNERABILITY 2: Subtract pointers from different objects
++		 * This calculation is UNDEFINED BEHAVIOR! */
++		ptrdiff_t wrong_distance = (char *)hdr->tcp - local_buffer; // diagnostic required
++		bpf_printk("UNDEFINED: Distance between different objects: %td", wrong_distance);
++
++		/* Show both comparison directions - both are undefined behavior */
++		if ((char *)hdr->eth > local_buffer) { // diagnostic required
++			bpf_printk("UNDEFINED: packet %p > stack %p", hdr->eth, local_buffer);
++		} else {
++			bpf_printk("UNDEFINED: packet %p < stack %p", hdr->eth, local_buffer);
++		}
++
++		/* DANGER: Use undefined result in program logic */
++		if (wrong_distance != 0) { // This will always be true
++			bpf_printk("CRITICAL: Program logic based on undefined pointer arithmetic!");
++		}
++	}
++
+ 	return XDP_TX;
+ }
+ 
+-- 
+2.50.1
+

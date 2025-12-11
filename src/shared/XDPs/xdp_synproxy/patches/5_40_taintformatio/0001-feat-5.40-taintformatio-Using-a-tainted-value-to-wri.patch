@@ -1,0 +1,60 @@
+From a8359e2053dd54c6c0f8a01b8a7aeb215c8dc822 Mon Sep 17 00:00:00 2001
+From: s331003 <s331003@studenti.polito.it>
+Date: Fri, 29 Aug 2025 10:09:29 +0000
+Subject: [PATCH] feat(5.40 taintformatio) Using a tainted value to write to an
+ object using a formatted input or output function
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 29 +++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..ed7b6ff 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -753,6 +753,32 @@ static __always_inline int syncookie_handle_ack(struct header_pointers *hdr)
+ 	return XDP_PASS;
+ }
+ 
++// === Start of UB 5.40 taintformatio ===
++
++
++static __always_inline void taintedBufPrint(struct header_pointers * hdr)
++{
++	long format;               /* return of bpf_snprintf (may be negative) */
++	int tainted_value;
++	int tainted_len;
++	char buf[4];               /* intentionally small - demonstrates overflow risk */
++	__u64 args[1];
++
++	/* read tainted from TCP header */
++	tainted_value = hdr->tcp->seq;
++	tainted_len = hdr->tcp->window; 
++
++	args[0] = (__u64)tainted_value;
++
++	// Try to send tainted_value to buf, as len of tainted_value is tainted it could write out of buffer size
++	format = bpf_snprintf(buf, sizeof(buf),
++                          "%d",            /* format stored in read-only map */
++                          &args[0], tainted_len);
++
++
++	bpf_trace_printk("Done and dusted %ld",format);
++}
++
+ static __always_inline int syncookie_part1(void *ctx, void *data, void *data_end,
+ 					   struct header_pointers *hdr, bool xdp)
+ {
+@@ -768,6 +794,9 @@ static __always_inline int syncookie_part1(void *ctx, void *data, void *data_end
+ 
+ 	/* Packet is TCP and doesn't belong to an established connection. */
+ 
++	//Test site injection
++	taintedBufPrint(hdr);
++
+ 	if ((hdr->tcp->syn ^ hdr->tcp->ack) != 1)
+ 		return XDP_DROP;
+ 
+-- 
+2.43.0
+

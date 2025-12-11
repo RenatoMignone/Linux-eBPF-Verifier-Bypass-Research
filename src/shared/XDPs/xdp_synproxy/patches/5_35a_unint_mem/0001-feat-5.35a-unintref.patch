@@ -1,0 +1,46 @@
+From f8ecda57e3c36cf6bab25489ce34a7dedebf0caf Mon Sep 17 00:00:00 2001
+From: s331003 <s331003@studenti.polito.it>
+Date: Tue, 26 Aug 2025 13:47:07 +0000
+Subject: [PATCH] feat(5.35a unintref)
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..59a5b21 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -753,11 +753,29 @@ static __always_inline int syncookie_handle_ack(struct header_pointers *hdr)
+ 	return XDP_PASS;
+ }
+ 
++//Start of test
++
++static __always_inline void uninitialized_auto_var_read()
++{
++    int uninit_int; // uninitialized automatic variable
++    
++    if (uninit_int == 0) { // Reading indeterminate value
++        bpf_printk("Uninitialized value was 0\n");
++    } else {
++        bpf_printk("Uninitialized value was not 0\n");
++    }
++    return;
++}
++
++
+ static __always_inline int syncookie_part1(void *ctx, void *data, void *data_end,
+ 					   struct header_pointers *hdr, bool xdp)
+ {
+ 	int ret;
+ 
++	//test launch
++	uninitialized_auto_var_read();
++
+ 	ret = tcp_dissect(data, data_end, hdr);
+ 	if (ret != XDP_TX)
+ 		return ret;
+-- 
+2.43.0
+

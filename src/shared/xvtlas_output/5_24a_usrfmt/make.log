@@ -1,0 +1,44 @@
+make: Entering directory '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy'
+clang -O2 -g -Wall -target bpf -I. -I../tools -I.. -I/usr/include/bpf -I/usr/include/x86_64-linux-gnu/linux -D__TARGET_ARCH_x86 -c xdp_synproxy_kern.c -o xdp_synproxy_kern.bpf.o
+xdp_synproxy_kern.c:208:16: warning: comparison of distinct pointer types ('__u8 *' (aka 'unsigned char *') and 'void *') [-Wcompare-distinct-pointer-types]
+  208 |         if (data + sz >= ctx->data_end)
+      |             ~~~~~~~~~ ^  ~~~~~~~~~~~~~
+xdp_synproxy_kern.c:377:19: warning: comparison of distinct pointer types ('struct ethhdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  377 |         if (hdr->eth + 1 > data_end)
+      |             ~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:390:3: error: array initializer must be an initializer list or string literal
+  390 |                 bpf_printk(tainted_fmt);
+      |                 ^
+/usr/include/bpf/bpf_helpers.h:298:34: note: expanded from macro 'bpf_printk'
+  298 | #define bpf_printk(fmt, args...) ___bpf_pick_printk(args)(fmt, ##args)
+      |                                  ^
+/usr/include/bpf/bpf_helpers.h:295:26: note: expanded from macro '___bpf_pick_printk'
+  295 |                    __bpf_printk /*1*/, __bpf_printk /*0*/)
+      |                                        ^
+xdp_synproxy_kern.c:390:3: error: invalid application of 'sizeof' to an incomplete type 'const char[]'
+  390 |                 bpf_printk(tainted_fmt);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~
+/usr/include/bpf/bpf_helpers.h:298:34: note: expanded from macro 'bpf_printk'
+  298 | #define bpf_printk(fmt, args...) ___bpf_pick_printk(args)(fmt, ##args)
+      |                                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/include/bpf/bpf_helpers.h:295:26: note: expanded from macro '___bpf_pick_printk'
+  295 |                    __bpf_printk /*1*/, __bpf_printk /*0*/)
+      |                                        ^
+/usr/include/bpf/bpf_helpers.h:198:79: note: expanded from macro '___bpf_nth'
+  198 | #define ___bpf_nth(_, _1, _2, _3, _4, _5, _6, _7, _8, _9, _a, _b, _c, N, ...) N
+      |                                                                               ^
+/usr/include/bpf/bpf_helpers.h:266:34: note: expanded from macro '__bpf_printk'
+  266 |         bpf_trace_printk(____fmt, sizeof(____fmt),      \
+      |                                         ^~~~~~~~~
+xdp_synproxy_kern.c:398:21: warning: comparison of distinct pointer types ('struct iphdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  398 |                 if (hdr->ipv4 + 1 > data_end)
+      |                     ~~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:414:21: warning: comparison of distinct pointer types ('struct ipv6hdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  414 |                 if (hdr->ipv6 + 1 > data_end)
+      |                     ~~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:432:19: warning: comparison of distinct pointer types ('struct tcphdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  432 |         if (hdr->tcp + 1 > data_end)
+      |             ~~~~~~~~~~~~ ^ ~~~~~~~~
+5 warnings and 2 errors generated.
+make: *** [Makefile:49: xdp_synproxy_kern.bpf.o] Error 1
+make: Leaving directory '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy'

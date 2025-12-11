@@ -1,0 +1,31 @@
+From 0cb8dce610f6298fc0d43853e5c4a014bb45eb34 Mon Sep 17 00:00:00 2001
+From: Gianfranco Trad <s323713@studenti.polito.it>
+Date: Fri, 29 Aug 2025 18:57:37 +0000
+Subject: [PATCH] feat: 5.22f
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..54e1928 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -377,6 +377,14 @@ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 	if (hdr->eth + 1 > data_end)
+ 		return XDP_DROP;
+ 
++	/* UB Injection 6: Flexible array member access with no elements */
++	struct {
++		__u16 len;
++		__u8 data[];
++	} *flexible_struct = (__u8 *)hdr->tcp;
++	__u8 invalid_flex_access = flexible_struct->data[0]; // Accessing non-existent element
++	bpf_printk("[invptr-5]: Invalid flexible array access: %u", invalid_flex_access);
++
+ 	switch (bpf_ntohs(hdr->eth->h_proto)) {
+ 	case ETH_P_IP:
+ 		hdr->ipv6 = NULL;
+-- 
+2.43.0
+

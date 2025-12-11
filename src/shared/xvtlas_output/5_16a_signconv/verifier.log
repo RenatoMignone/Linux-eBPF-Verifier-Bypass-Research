@@ -1,0 +1,102 @@
+libbpf: prog 'syncookie_xdp': BPF program load failed: Permission denied
+libbpf: prog 'syncookie_xdp': -- BEGIN PROG LOAD LOG --
+0: R1=ctx() R10=fp0
+; int syncookie_xdp(struct xdp_md *ctx)
+0: (b7) r8 = 1                        ; R8_w=1
+; void *data_end = (void *)(long)ctx->data_end;
+1: (61) r2 = *(u32 *)(r1 +4)          ; R1=ctx() R2_w=pkt_end()
+; void *data = (void *)(long)ctx->data;
+2: (61) r6 = *(u32 *)(r1 +0)          ; R1=ctx() R6_w=pkt(r=0)
+; if (hdr->eth + 1 > data_end)
+3: (bf) r3 = r6                       ; R3_w=pkt(r=0) R6_w=pkt(r=0)
+4: (07) r3 += 14                      ; R3_w=pkt(off=14,r=0)
+; if (hdr->eth + 1 > data_end)
+5: (2d) if r3 > r2 goto pc+235        ; R2_w=pkt_end() R3_w=pkt(off=14,r=14)
+; switch (bpf_ntohs(hdr->eth->h_proto)) {
+6: (69) r4 = *(u16 *)(r6 +12)         ; R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff)) R6_w=pkt(r=14)
+7: (dc) r4 = be16 r4                  ; R4_w=scalar()
+; switch (bpf_ntohs(hdr->eth->h_proto)) {
+8: (15) if r4 == 0x86dd goto pc+23    ; R4_w=scalar()
+9: (b7) r8 = 2                        ; R8=2
+10: (55) if r4 != 0x800 goto pc+230   ; R4=2048
+; if (hdr->ipv4 + 1 > data_end)
+11: (07) r6 += 34                     ; R6_w=pkt(off=34,r=14)
+12: (b7) r8 = 1                       ; R8_w=1
+; if (hdr->ipv4 + 1 > data_end)
+13: (2d) if r6 > r2 goto pc+227       ; R2=pkt_end() R6_w=pkt(off=34,r=34)
+; if (hdr->ipv4->ihl * 4 < sizeof(*hdr->ipv4))
+14: (71) r4 = *(u8 *)(r3 +0)          ; R3=pkt(off=14,r=34) R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+; if (hdr->ipv4->ihl * 4 < sizeof(*hdr->ipv4))
+15: (57) r4 &= 15                     ; R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=15,var_off=(0x0; 0xf))
+16: (b7) r5 = 5                       ; R5_w=5
+; if (hdr->ipv4->ihl * 4 < sizeof(*hdr->ipv4))
+17: (2d) if r5 > r4 goto pc+223       ; R4_w=scalar(smin=umin=smin32=umin32=5,smax=umax=smax32=umax32=15,var_off=(0x0; 0xf)) R5_w=5
+; if (hdr->ipv4->version != 4)
+18: (71) r4 = *(u8 *)(r3 +0)          ; R3=pkt(off=14,r=34) R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+; if (hdr->ipv4->version != 4)
+19: (57) r4 &= 240                    ; R4=scalar(smin=smin32=0,smax=umax=smax32=umax32=240,var_off=(0x0; 0xf0))
+; if (hdr->ipv4->version != 4)
+20: (55) if r4 != 0x40 goto pc+220    ; R4=64
+; if (hdr->ipv4->protocol != IPPROTO_TCP)
+21: (71) r4 = *(u8 *)(r3 +9)          ; R3=pkt(off=14,r=34) R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+22: (b7) r8 = 2                       ; R8_w=2
+; if (hdr->ipv4->protocol != IPPROTO_TCP)
+23: (55) if r4 != 0x6 goto pc+217     ; R4_w=6
+; hdr->tcp = (void *)hdr->ipv4 + hdr->ipv4->ihl * 4;
+24: (71) r4 = *(u8 *)(r3 +0)          ; R3=pkt(off=14,r=34) R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+; hdr->tcp = (void *)hdr->ipv4 + hdr->ipv4->ihl * 4;
+25: (67) r4 <<= 2                     ; R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=1020,var_off=(0x0; 0x3fc))
+26: (57) r4 &= 60                     ; R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; hdr->tcp = (void *)hdr->ipv4 + hdr->ipv4->ihl * 4;
+27: (bf) r6 = r3                      ; R3=pkt(off=14,r=34) R6_w=pkt(off=14,r=34)
+28: (0f) r6 += r4                     ; R4_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R6_w=pkt(id=1,off=14,r=0,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+29: (b7) r5 = 0                       ; R5_w=0
+30: (bf) r0 = r3                      ; R0_w=pkt(off=14,r=34) R3=pkt(off=14,r=34)
+31: (05) goto pc+10
+; if (hdr->tcp + 1 > data_end)
+42: (bf) r3 = r6                      ; R3_w=pkt(id=1,off=14,r=0,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R6=pkt(id=1,off=14,r=0,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+43: (07) r3 += 20                     ; R3_w=pkt(id=1,off=34,r=0,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+44: (b7) r8 = 1                       ; R8_w=1
+; if (hdr->tcp + 1 > data_end)
+45: (2d) if r3 > r2 goto pc+195       ; R2=pkt_end() R3_w=pkt(id=1,off=34,r=34,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; hdr->tcp_len = hdr->tcp->doff * 4;
+46: (69) r9 = *(u16 *)(r6 +12)        ; R6=pkt(id=1,off=14,r=34,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R9_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff))
+; hdr->tcp_len = hdr->tcp->doff * 4;
+47: (77) r9 >>= 2                     ; R9_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=16383,var_off=(0x0; 0x3fff))
+48: (57) r9 &= 60                     ; R9_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+49: (b7) r2 = 20                      ; R2_w=20
+; if (hdr->tcp_len < sizeof(*hdr->tcp))
+50: (2d) if r2 > r9 goto pc+190       ; R2_w=20 R9_w=scalar(smin=umin=smin32=umin32=20,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+51: (7b) *(u64 *)(r10 -72) = r0       ; R0=pkt(off=14,r=34) R10=fp0 fp-72_w=pkt(off=14,r=34)
+52: (7b) *(u64 *)(r10 -88) = r5       ; R5=0 R10=fp0 fp-88_w=0
+53: (7b) *(u64 *)(r10 -80) = r1       ; R1=ctx() R10=fp0 fp-80_w=ctx()
+; char *tcp_payload = (char *)hdr->tcp + (hdr->tcp->doff * 4);
+54: (69) r1 = *(u16 *)(r6 +12)        ; R1_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=0xffff,var_off=(0x0; 0xffff)) R6=pkt(id=1,off=14,r=34,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; char *tcp_payload = (char *)hdr->tcp + (hdr->tcp->doff * 4);
+55: (77) r1 >>= 2                     ; R1_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=16383,var_off=(0x0; 0x3fff))
+56: (57) r1 &= 60                     ; R1_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+; char *tcp_payload = (char *)hdr->tcp + (hdr->tcp->doff * 4);
+57: (bf) r8 = r6                      ; R6=pkt(id=1,off=14,r=34,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R8_w=pkt(id=1,off=14,r=34,smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c))
+58: (0f) r8 += r1                     ; R1_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=60,var_off=(0x0; 0x3c)) R8_w=pkt(id=2,off=14,r=0,smin=smin32=0,smax=umax=smax32=umax32=120,var_off=(0x0; 0x7c))
+; char raw_char = tcp_payload[i];  // verifier should reject this
+59: (71) r7 = *(u8 *)(r8 +0)
+invalid access to packet, off=14 size=1, R8(id=2,off=14,r=0)
+R8 offset is outside of the packet
+processed 50 insns (limit 1000000) max_states_per_insn 0 total_states 3 peak_states 3 mark_read 3
+
+[96m#######################
+[96m## Prettier Verifier ##
+[96m#######################
+
+[91merror[0m: [94mInvalid access to packet[0m
+   435 | char raw_char = tcp_payload[i];
+       | in file /home/user/ebpf-tests-3-1/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+The eBPF verifier is detecting 15 bytes over the upper bound of the packet you are trying to access.
+
+[92mMake sure that the index "i" has been checked to be within the packet allocated memory, or that the current bound check is restrictive enough (you are off by 15 bytes over the upper bound).
+[0m
+
+-- END PROG LOAD LOG --
+libbpf: prog 'syncookie_xdp': failed to load: -13
+libbpf: failed to load object '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy/xdp_synproxy_kern.bpf.o'
+Error: failed to load object file

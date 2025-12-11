@@ -1,0 +1,52 @@
+From 2aecb42d2f4956e25e35ed7fdf196082efc88548 Mon Sep 17 00:00:00 2001
+From: Giorgio <s331003@studenti.polito.it>
+Date: Sat, 19 Jul 2025 11:22:40 +0000
+Subject: [PATCH] feat(5.39 taintnoproto) Using a tainted value as pointer to
+ func without prototype
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..05c7a86 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -753,6 +753,22 @@ static __always_inline int syncookie_handle_ack(struct header_pointers *hdr)
+ 	return XDP_PASS;
+ }
+ 
++//Test start
++struct __attribute__((packed)) __attribute__((aligned(8))) sample_struct {
++	__u8 array1[16]; //Aligned struct of arrays
++	__u8 array2[16];
++};
++
++static __always_inline void restricted_sink(int i)
++{
++	struct sample_struct s = {};
++	bpf_printk("index : %d", i);
++	s.array1[i] = 42;	//Potential out of bounds write
++	bpf_printk("Content %d", s.array1[i]);
++		//bpf_printk("nextone %d",s.array1[i+1]); As soon as i introduce array arithmetics its flagged
++	return;
++}
++
+ static __always_inline int syncookie_part1(void *ctx, void *data, void *data_end,
+ 					   struct header_pointers *hdr, bool xdp)
+ {
+@@ -766,6 +782,11 @@ static __always_inline int syncookie_part1(void *ctx, void *data, void *data_end
+ 	if (ret != XDP_TX)
+ 		return ret;
+ 
++	//test site
++	void (*pf)() = restricted_sink; //unprototyped function pointer
++	bpf_printk("Seq : %d", hdr->tcp->seq);
++	(*pf)(bpf_htons(hdr->tcp->seq)/1000); //This is the tainted input into unproto function call
++
+ 	/* Packet is TCP and doesn't belong to an established connection. */
+ 
+ 	if ((hdr->tcp->syn ^ hdr->tcp->ack) != 1)
+-- 
+2.43.0
+

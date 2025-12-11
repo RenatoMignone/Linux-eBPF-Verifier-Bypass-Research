@@ -1,0 +1,46 @@
+From 81a7346e040edff84573699fda131ca53e5e861f Mon Sep 17 00:00:00 2001
+From: s331003 <s331003@studenti.polito.it>
+Date: Tue, 26 Aug 2025 07:20:28 +0000
+Subject: [PATCH] feat(5.14b nullref) unchecked map lookup dereference
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..bbcf4ec 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -790,9 +790,29 @@ static __always_inline int syncookie_part1(void *ctx, void *data, void *data_end
+ 	return XDP_TX;
+ }
+ 
++/* === Test begin (variant: unchecked map lookup pointer) ===
++ * Receives a pointer from bpf_map_lookup_elem and dereferences it
++ * without checking for NULL or domain, violating 5.14 [nullref].
++ */
++static __always_inline void unsafe_values_peek(void)
++{
++    __u32 key = 1234; /* outside declared range on purpose */
++    __u64 *value = bpf_map_lookup_elem(&values, &key);
++    char buf[sizeof(__u64)] = {};
++
++    bpf_printk("peeking map value (may be NULL)");
++    /* value may be NULL (or out-of-domain for verifier); still deref */
++    __builtin_memcpy(buf, value, sizeof(__u64));
++    bpf_printk("peeked map value %s",buf[0]);
++}
++/* === Test end === */
++
+ static __always_inline int syncookie_part2(void *ctx, void *data, void *data_end,
+ 					   struct header_pointers *hdr, bool xdp)
+ {
++	/* enter test field: use unchecked map lookup before any parsing */
++    	unsafe_values_peek();
++
+ 	if (hdr->ipv4) {
+ 		hdr->eth = data;
+ 		hdr->ipv4 = (void *)hdr->eth + sizeof(*hdr->eth);
+-- 
+2.43.0
+

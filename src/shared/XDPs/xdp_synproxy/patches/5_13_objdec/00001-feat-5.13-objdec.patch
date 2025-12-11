@@ -1,0 +1,28 @@
+From e2cb58bfaa0dae5719b9ea6cea424f2e00dda706 Mon Sep 17 00:00:00 2001
+From: Gianfranco Trad <s323713@studenti.polito.it>
+Date: Wed, 23 Jul 2025 13:00:23 +0000
+Subject: [PATCH] feat: (5.13 objdec ) Declaring function or object in
+ incompatible ways
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..cc4aaff 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -376,7 +376,9 @@ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 	hdr->eth = data;
+ 	if (hdr->eth + 1 > data_end)
+ 		return XDP_DROP;
+-
++	/* UB: incompatible object declarations (Rule 5.13) */
++	extern int fake_var;
++	short fake_var = 42;  // Conflicting type (int vs short)
+ 	switch (bpf_ntohs(hdr->eth->h_proto)) {
+ 	case ETH_P_IP:
+ 		hdr->ipv6 = NULL;
+-- 
+2.43.0
+

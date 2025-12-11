@@ -1,0 +1,35 @@
+make: Entering directory '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy'
+clang -O2 -g -Wall -target bpf -I. -I../tools -I.. -I/usr/include/bpf -I/usr/include/x86_64-linux-gnu/linux -D__TARGET_ARCH_x86 -c xdp_synproxy_kern.c -o xdp_synproxy_kern.bpf.o
+xdp_synproxy_kern.c:208:16: warning: comparison of distinct pointer types ('__u8 *' (aka 'unsigned char *') and 'void *') [-Wcompare-distinct-pointer-types]
+  208 |         if (data + sz >= ctx->data_end)
+      |             ~~~~~~~~~ ^  ~~~~~~~~~~~~~
+xdp_synproxy_kern.c:380:19: warning: comparison of distinct pointer types ('struct ethhdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  380 |         if (hdr->eth + 1 > data_end)
+      |             ~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:388:21: warning: comparison of distinct pointer types ('struct iphdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  388 |                 if (hdr->ipv4 + 1 > data_end)
+      |                     ~~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:404:21: warning: comparison of distinct pointer types ('struct ipv6hdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  404 |                 if (hdr->ipv6 + 1 > data_end)
+      |                     ~~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:422:19: warning: comparison of distinct pointer types ('struct tcphdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  422 |         if (hdr->tcp + 1 > data_end)
+      |             ~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:445:20: warning: passing arguments to 'debug_print_helper' without a prototype is deprecated in all versions of C and is not supported in C23 [-Wdeprecated-non-prototype]
+  445 |         debug_print_helper("Port value: %u at line %d", port_val, __LINE__);  // Looks like printf
+      |                           ^
+xdp_synproxy_kern.c:374:6: warning: a function declaration without a prototype is deprecated in all versions of C and is treated as a zero-parameter prototype in C23, conflicting with a subsequent definition [-Wdeprecated-non-prototype]
+  374 | void debug_print_helper();
+      |      ^
+xdp_synproxy_kern.c:453:6: note: conflicting prototype is here
+  453 | void debug_print_helper(const char *fmt, ...) {
+      |      ^
+xdp_synproxy_kern.c:453:6: error: conflicting types for 'debug_print_helper'
+  453 | void debug_print_helper(const char *fmt, ...) {
+      |      ^
+xdp_synproxy_kern.c:374:6: note: previous declaration is here
+  374 | void debug_print_helper();
+      |      ^
+7 warnings and 1 error generated.
+make: *** [Makefile:49: xdp_synproxy_kern.bpf.o] Error 1
+make: Leaving directory '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy'

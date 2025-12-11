@@ -1,0 +1,26 @@
+make: Entering directory '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy'
+clang -O2 -g -Wall -target bpf -I. -I../tools -I.. -I/usr/include/bpf -I/usr/include/x86_64-linux-gnu/linux -D__TARGET_ARCH_x86 -c xdp_synproxy_kern.c -o xdp_synproxy_kern.bpf.o
+xdp_synproxy_kern.c:208:16: warning: comparison of distinct pointer types ('__u8 *' (aka 'unsigned char *') and 'void *') [-Wcompare-distinct-pointer-types]
+  208 |         if (data + sz >= ctx->data_end)
+      |             ~~~~~~~~~ ^  ~~~~~~~~~~~~~
+xdp_synproxy_kern.c:377:19: warning: comparison of distinct pointer types ('struct ethhdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  377 |         if (hdr->eth + 1 > data_end)
+      |             ~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:381:8: error: redefinition of 'fake_var' with a different type: 'short' vs 'int'
+  381 |         short fake_var = 42;  // Conflicting type (int vs short)
+      |               ^
+xdp_synproxy_kern.c:380:13: note: previous declaration is here
+  380 |         extern int fake_var;
+      |                    ^
+xdp_synproxy_kern.c:387:21: warning: comparison of distinct pointer types ('struct iphdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  387 |                 if (hdr->ipv4 + 1 > data_end)
+      |                     ~~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:403:21: warning: comparison of distinct pointer types ('struct ipv6hdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  403 |                 if (hdr->ipv6 + 1 > data_end)
+      |                     ~~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:421:19: warning: comparison of distinct pointer types ('struct tcphdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  421 |         if (hdr->tcp + 1 > data_end)
+      |             ~~~~~~~~~~~~ ^ ~~~~~~~~
+5 warnings and 1 error generated.
+make: *** [Makefile:49: xdp_synproxy_kern.bpf.o] Error 1
+make: Leaving directory '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy'

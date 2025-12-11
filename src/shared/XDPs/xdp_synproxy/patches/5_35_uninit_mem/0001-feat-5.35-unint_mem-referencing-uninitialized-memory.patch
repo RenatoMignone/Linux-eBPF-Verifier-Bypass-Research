@@ -1,0 +1,47 @@
+From a0ad67d64e89ff43f6c4810f4b3184bcd85d1c57 Mon Sep 17 00:00:00 2001
+From: Giorgio <s331003@studenti.polito.it>
+Date: Thu, 17 Jul 2025 20:56:20 +0000
+Subject: [PATCH] feat(5.35 unint_mem): referencing uninitialized memory
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..5899e35 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -753,11 +753,29 @@ static __always_inline int syncookie_handle_ack(struct header_pointers *hdr)
+ 	return XDP_PASS;
+ }
+ 
++//Start of test
++
++static __always_inline void uninitializedRead()
++{
++	char *uninit_ptr; // uninitialized pointer
++	char buf[64];
++	bpf_printk("In here %s\n", buf);
++
++	__builtin_memcpy(buf, uninit_ptr, 64); // unsafe read
++
++	for(int i = 0; i<64; i++){
++		bpf_printk("%d",buf[i]);
++	}
++	//Prints random data
++	return;
++}
++
+ static __always_inline int syncookie_part1(void *ctx, void *data, void *data_end,
+ 					   struct header_pointers *hdr, bool xdp)
+ {
+ 	int ret;
+-
++	uninitializedRead();
++	
+ 	ret = tcp_dissect(data, data_end, hdr);
+ 	if (ret != XDP_TX)
+ 		return ret;
+-- 
+2.43.0
+

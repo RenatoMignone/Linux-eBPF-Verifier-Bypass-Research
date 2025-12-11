@@ -1,0 +1,43 @@
+From d26b08c2dabd0cc4019f0875da692039c9abad0b Mon Sep 17 00:00:00 2001
+From: Gianfranco Trad <s323713@studenti.polito.it>
+Date: Wed, 27 Aug 2025 20:47:42 +0000
+Subject: [PATCH] 5.1a ptrcomp
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..5ceae41 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -377,6 +377,15 @@ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 	if (hdr->eth + 1 > data_end)
+ 		return XDP_DROP;
+ 
++	/* 
++     * UB Injection 1: Reinterpreting Ethernet header as IPv4 header.
++     * Strict aliasing rules are violated here because the Ethernet header
++     * is accessed as an IPv4 header, which is an incompatible type.
++     * This results in undefined behavior.
++     */
++    struct iphdr *fake_ipv4 = (struct iphdr *)hdr->eth;
++    __u8 ttl = fake_ipv4->ttl;
++
+ 	switch (bpf_ntohs(hdr->eth->h_proto)) {
+ 	case ETH_P_IP:
+ 		hdr->ipv6 = NULL;
+@@ -388,7 +397,9 @@ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 			return XDP_DROP;
+ 		if (hdr->ipv4->version != 4)
+ 			return XDP_DROP;
+-
++		/* UB Injection 1 in action: sanity check if ttl greater than DEAFULT_TTL might be a XDP malformed packet */
++		if (ttl > DEFAULT_TTL)
++			return XDP_DROP;
+ 		if (hdr->ipv4->protocol != IPPROTO_TCP)
+ 			return XDP_PASS;
+ 
+-- 
+2.43.0
+

@@ -1,0 +1,51 @@
+From d513edeb12c069081274b52e272dd23c0dd75fb7 Mon Sep 17 00:00:00 2001
+From: mood <74420740+no-mood@users.noreply.github.com>
+Date: Wed, 23 Jul 2025 12:57:05 +0200
+Subject: [PATCH] feat(5.6a argcomp): Calling a function with the wrong number
+ or type of arguments.
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..9efcabe 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -422,6 +422,33 @@ static __always_inline int tcp_dissect(void *data, void *data_end,
+ 	if (hdr->tcp_len < sizeof(*hdr->tcp))
+ 		return XDP_DROP;
+ 
++	/* 5.6a [argcomp]: Calling functions with incorrect arguments - EXAMPLE 1
++	 *
++	 * Function pointer with incompatible type (UB 26). Based on 5.6 EXAMPLE 1
++	 * where strchr is called through function pointer fp with incorrectly
++	 * typed arguments.
++	 *
++	 * **Implementation Details:**
++	 * - A function pointer `fp_wrong_type` is declared with signature `__u16 ()()`
++	 *   (taking no arguments and returning __u16).
++	 * - The pointer is assigned to `csum_fold`, which actually has signature
++	 *   `__u16 (__u32)` (taking one __u32 argument and returning __u16).
++	 * - The function is then called through the pointer with two arguments
++	 *   (0x12345678, 0x9abcdef0), creating a type incompatibility violation.
++	 * - This demonstrates UB 26: "A pointer is used to call a function whose type
++	 *   is not compatible with the pointed-to type."
++	 *
++	 * **Compiler/Verifier:** Compiles with warnings in current C standards,
++	 * but is rejected starting from C23 due to stricter function pointer
++	 * type checking [-Wdeprecated-non-prototype].
++	 * Non-exploitable: even though it passes the verifier, the BPF verifier calling convention
++	 * limits the number of arguments passed to the function to 5, and no stack space is allocated for the extra argument.
++	 */
++	__u16 (*fp_wrong_type)();
++	fp_wrong_type = csum_fold;  // Incompatible signature - expects (__u32) but declared ()
++	__u16 csum_result = fp_wrong_type(0x12345678, 0x9abcdef0);  // Called with wrong args
++	bpf_printk("[argcomp]: 5.6a - csum: %u", csum_result);
++
+ 	return XDP_TX;
+ }
+ 
+-- 
+2.49.0
+

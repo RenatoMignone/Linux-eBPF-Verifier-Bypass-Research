@@ -1,0 +1,44 @@
+From 340892d58c3e435be3b065babeec8aaec343952b Mon Sep 17 00:00:00 2001
+From: s331003 <s331003@studenti.polito.it>
+Date: Tue, 26 Aug 2025 08:22:17 +0000
+Subject: [PATCH] feat(5.15b) addrescape
+
+---
+ XDPs/xdp_synproxy/xdp_synproxy_kern.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/XDPs/xdp_synproxy/xdp_synproxy_kern.c b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+index 0d0d990..0c579e7 100644
+--- a/XDPs/xdp_synproxy/xdp_synproxy_kern.c
++++ b/XDPs/xdp_synproxy/xdp_synproxy_kern.c
+@@ -753,11 +753,27 @@ static __always_inline int syncookie_handle_ack(struct header_pointers *hdr)
+ 	return XDP_PASS;
+ }
+ 
++// ===== Test: Example 3 =====
++// Escaping address of local automatic object via function parameter
++static __always_inline void squirrel_away(char **ptr_param)
++{
++	char fmt[] = "Error: %s\n";
++	*ptr_param = fmt; // diagnostic required
++}
++
+ static __always_inline int syncookie_part1(void *ctx, void *data, void *data_end,
+ 					   struct header_pointers *hdr, bool xdp)
+ {
+ 	int ret;
+ 
++	// Trigger Example 3
++	char *fmt_ptr;
++	squirrel_away(&fmt_ptr);
++	if (fmt_ptr) {
++		bpf_printk("Escaped fmt string: %s", fmt_ptr);
++	}
++
++
+ 	ret = tcp_dissect(data, data_end, hdr);
+ 	if (ret != XDP_TX)
+ 		return ret;
+-- 
+2.43.0
+

@@ -1,0 +1,24 @@
+make: Entering directory '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy'
+clang -O2 -g -Wall -target bpf -I. -I../tools -I.. -I/usr/include/bpf -I/usr/include/x86_64-linux-gnu/linux -D__TARGET_ARCH_x86 -c xdp_synproxy_kern.c -o xdp_synproxy_kern.bpf.o
+xdp_synproxy_kern.c:208:16: warning: comparison of distinct pointer types ('__u8 *' (aka 'unsigned char *') and 'void *') [-Wcompare-distinct-pointer-types]
+  208 |         if (data + sz >= ctx->data_end)
+      |             ~~~~~~~~~ ^  ~~~~~~~~~~~~~
+xdp_synproxy_kern.c:377:19: warning: comparison of distinct pointer types ('struct ethhdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  377 |         if (hdr->eth + 1 > data_end)
+      |             ~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:390:21: warning: comparison of distinct pointer types ('struct iphdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  390 |                 if (hdr->ipv4 + 1 > data_end)
+      |                     ~~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:406:21: warning: comparison of distinct pointer types ('struct ipv6hdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  406 |                 if (hdr->ipv6 + 1 > data_end)
+      |                     ~~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:424:19: warning: comparison of distinct pointer types ('struct tcphdr *' and 'void *') [-Wcompare-distinct-pointer-types]
+  424 |         if (hdr->tcp + 1 > data_end)
+      |             ~~~~~~~~~~~~ ^ ~~~~~~~~
+xdp_synproxy_kern.c:383:7: warning: unused variable 'ttl' [-Wunused-variable]
+  383 |         __u8 ttl = fake_ipv4->ttl; // UB: accessing IP header fields from eth pointer
+      |              ^~~
+6 warnings generated.
+Compiling user-space program: xdp_synproxy
+clang -O2 -g -Wall -I. -I../tools -I.. -I/usr/include/bpf -I/usr/include -I/usr/include/x86_64-linux-gnu/linux -lbpf -lbfd -lelf -lz -lcap -lmnl  xdp_synproxy.c -o xdp_synproxy
+make: Leaving directory '/home/user/ebpf-tests-3-1/XDPs/xdp_synproxy'
