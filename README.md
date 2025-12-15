@@ -1093,29 +1093,8 @@ This workflow bridges the gap between theoretical vulnerability assessment and p
 
 The following vulnerabilities are the primary focus for practical exploitation in this project:
 
-- **5.6 argcomp** — Function pointer type incompatibility
-- **5.6 argcomp** — Wrong number of arguments
-- **5.6 argcomp** — Wrong argument types
+- **5.6a argcomp** — Function pointer type incompatibility
+- **5.6b argcomp** — Wrong number of arguments
+- **5.6d argcomp** — Wrong argument types
 - **5.39 taintnoproto** — Using tainted values as function pointers without prototypes
 - **5.46b taintsink** — Memory copy with tainted length
-
----
-
-## Root Makefile for VM Lifecycle Management
-
-A Makefile has been added to the root directory to simplify VM creation and destruction. You can now manage the test VM with simple make commands:
-
-```bash
-# Create and provision the VM (default SSH key: ~/.ssh/id_rsa.pub)
-make create
-
-# Optionally specify a different SSH key
-make create SSH_KEY=~/.ssh/your_key.pub
-
-# Destroy the VM
-make destroy
-```
-
-This Makefile wraps the `vmctl.sh` script in `ebpf-exploitability-test/codebase/virt/` for easier usage.
-
----
