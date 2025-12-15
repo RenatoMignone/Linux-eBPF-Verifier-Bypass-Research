@@ -1099,4 +1099,23 @@ The following vulnerabilities are the primary focus for practical exploitation i
 - **5.39 taintnoproto** — Using tainted values as function pointers without prototypes
 - **5.46b taintsink** — Memory copy with tainted length
 
-These vulnerabilities have been identified as exploitable or of high interest for demonstrating real-world kernel impact. The exploitation workflow, PoC development, and documentation will prioritize these cases.
+---
+
+## Root Makefile for VM Lifecycle Management
+
+A Makefile has been added to the root directory to simplify VM creation and destruction. You can now manage the test VM with simple make commands:
+
+```bash
+# Create and provision the VM (default SSH key: ~/.ssh/id_rsa.pub)
+make create
+
+# Optionally specify a different SSH key
+make create SSH_KEY=~/.ssh/your_key.pub
+
+# Destroy the VM
+make destroy
+```
+
+This Makefile wraps the `vmctl.sh` script in `ebpf-exploitability-test/codebase/virt/` for easier usage.
+
+---
