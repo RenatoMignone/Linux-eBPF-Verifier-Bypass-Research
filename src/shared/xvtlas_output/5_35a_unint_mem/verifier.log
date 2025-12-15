@@ -1,5 +1,0 @@
-libbpf: elf: skipping section(3) xdp (size 0)
-libbpf: elf: skipping section(4) tc (size 0)
-libbpf: Error loading ELF section .BTF.ext: -22. Ignored and continue.
-libbpf: BTF is required, but is missing or corrupted.
-Error: failed to open object file

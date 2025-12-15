@@ -18,6 +18,9 @@
 | 2025-12-11 | `virt/vmctl.sh` | Added codebase auto-copy to shared folder | Automate file transfer on VM creation |
 | 2025-12-11 | `virt/user-data.yaml` | Added full eBPF/XDP auto-setup | Automate module loading, vmlinux.h, compilation |
 | 2025-12-11 | Host system | Installed `virtiofsd` | Required for virtiofs shared folder |
+| 2025-12-15 | `XDPs/xdp_synproxy/start_session.sh` | Automated vmlinux.h extraction; changed interface to enp2s0 | Ensure correct setup and compatibility with VM network config |
+| 2025-12-15 | `XDPs/xdp_synproxy/` | Unified all paths to use shared folder contents directly (no codebase/ subfolder) | Consistency and clarity in workflow |
+| 2025-12-15 | `README.md` | Clarified workflow, added focus vulnerabilities, and patch application/rollback instructions | Improved documentation for practical exploitation |
 
 ---
 
@@ -304,6 +307,74 @@ ssh ubuntu@<vm-ip>
 # Or with password
 ssh ubuntu@<vm-ip>  # then enter 'u'
 ```
+
+---
+
+### 8. Automated vmlinux.h Extraction in `start_session.sh`
+
+**Date**: 2025-12-15  
+**File**: `ebpf-exploitability-test/codebase/XDPs/xdp_synproxy/start_session.sh`  
+**Status**: MODIFIED
+
+**Problem**: Manual extraction of `vmlinux.h` was error-prone and depended on correct VM IP and paths.
+
+**Solution**: Automated extraction with SSH command in `start_session.sh`:
+
+```bash
+# New function to extract vmlinux.h
+extract_vmlinux_h() {
+  local vm_ip="$1"
+  local user="ubuntu"
+  local password="u"
+
+  # SSH command to extract vmlinux.h from VM
+  sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$user@$vm_ip" \
+  "sudo cat /usr/src/linux-headers-$(uname -r)/include/linux/vmlinux.h" > ./vmlinux.h
+}
+
+# Usage example
+extract_vmlinux_h "<vm-ip>"
+```
+
+**Explanation**:
+- `sshpass` is used to provide the password non-interactively.
+- The function `extract_vmlinux_h` takes the VM IP as an argument and extracts `vmlinux.h` to the current directory.
+- **Note**: Ensure `sshpass` is installed on the host system.
+
+---
+
+### 9. Unified Shared Folder Paths
+
+**Date**: 2025-12-15  
+**File**: `ebpf-exploitability-test/codebase/XDPs/xdp_synproxy/`  
+**Status**: MODIFIED
+
+**Problem**: Inconsistent paths for shared folder access; some scripts still referenced `codebase/shared`.
+
+**Solution**: Unified all paths to use shared folder contents directly. Updated scripts and configurations to remove `codebase/` prefix.
+
+**Example Changes**:
+- From: `codebase/shared/somefile`
+- To: `shared/somefile`
+
+**Benefit**: Simplifies workflow and reduces confusion. All components now consistently use the shared folder structure.
+
+---
+
+### 10. README.md Clarifications
+
+**Date**: 2025-12-15  
+**File**: `ebpf-exploitability-test/codebase/README.md`  
+**Status**: MODIFIED
+
+**Problem**: Some users found the workflow unclear, and there were no instructions for the new patch application and rollback features.
+
+**Solution**: Updated README.md to include:
+- Detailed workflow steps for setting up and using the eBPF/XDP codebase.
+- Instructions for applying and rolling back patches using the new `patch.sh` script.
+- Clarification of focus vulnerabilities and how to test them.
+
+**Benefit**: Improves accessibility and usability of the codebase for new and existing users. Ensures everyone follows the same procedures, reducing errors and confusion.
 
 ---
 

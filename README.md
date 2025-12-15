@@ -1088,3 +1088,15 @@ This workflow bridges the gap between theoretical vulnerability assessment and p
 - [eBPF Documentation](https://ebpf.io/)
 - [Linux Kernel BPF Verifier](https://www.kernel.org/doc/html/latest/bpf/verifier.html)
 - Previous team's detailed documentation: `ebpf-exploitability-test/codebase/XDPs/xdp_synproxy/README.md`
+
+## Priority Vulnerabilities for Practical Exploitation
+
+The following vulnerabilities are the primary focus for practical exploitation in this project:
+
+- **5.6 argcomp** — Function pointer type incompatibility
+- **5.6 argcomp** — Wrong number of arguments
+- **5.6 argcomp** — Wrong argument types
+- **5.39 taintnoproto** — Using tainted values as function pointers without prototypes
+- **5.46b taintsink** — Memory copy with tainted length
+
+These vulnerabilities have been identified as exploitable or of high interest for demonstrating real-world kernel impact. The exploitation workflow, PoC development, and documentation will prioritize these cases.
