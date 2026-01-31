@@ -139,6 +139,8 @@ From the original dataset of 60+ patches, the following 5 vulnerabilities were s
         
 - **Tmux Navigation:**
     - `Ctrl+b` then `Arrow Keys` to switch panes.
+    - `Ctrl+b` then `c` to create a new tmux window.
+    - `Ctrl+b` then `n`/`p` to move to next/previous window, or `Ctrl+b` then `w` to choose a window.
     - `Ctrl+b` then `z` to zoom into the trace pipe for better visibility.
 - **Reverting Changes:** Always revert a patch before applying a new one to ensure a clean testing state.Bash
     
