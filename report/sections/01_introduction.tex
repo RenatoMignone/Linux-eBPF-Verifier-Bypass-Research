@@ -1,0 +1,55 @@
+\chapter{Introduction}
+
+\section{Motivation: From Theory to Practice}
+
+This project investigates the security boundaries of \textbf{eBPF} (extended Berkeley Packet Filter) by moving from \textbf{theoretical vulnerability identification} to \textbf{practical exploitation}. The fundamental question is: \textit{Do logic bugs in the eBPF verifier actually allow memory corruption and privilege escalation in real kernel execution?}
+
+A previous research team conducted a comprehensive, rule-based assessment of the XDP SynProxy program using ISO-IEC TS 17961-2013 as the vulnerability catalog. They identified approximately 60 potential violations and classified roughly 9 as theoretically exploitable by analyzing the verifier's behavior under code patches. Their work established the foundation for this study but left a critical gap: theoretical analysis alone is insufficient to understand real-world impact. This work bridges that gap by implementing functional proof-of-concept exploits, collecting multi-stage evidence, and determining which verifier bypasses represent genuine memory corruption primitives versus harmless runtime behaviors.
+
+Building on the previous team's infrastructure and vulnerability catalog, we extended the testing environment with external-perspective exploitation capability, allowing attacks to be launched from the host machine against the target VM's network interface. This enhancement transforms the assessment from local-only testing into a realistic network-adjacent attack scenario. Additionally, we modified the VM provisioning scripts and network configuration to support shared file system access (via host-to-VM mount) and bridged networking, streamlining the exploit deployment and testing workflow.
+
+The transition from theoretical to practical work requires:
+\begin{enumerate}[label=\arabic*.]
+  \item Engineering functional \textbf{Proofs of Concept (PoCs)} that trigger vulnerabilities through network packets
+  \item Collecting \textbf{multi-stage evidence} (bytecode, verifier logs, translated code, runtime traces) to document the attack chain
+  \item Distinguishing between \textit{runtime triggers} (which may be observable but harmless) and true \textbf{memory corruption primitives}  
+  \item Documenting a repeatable, evidence-based methodology applicable to future eBPF verifier assessment
+  \item Implementing an isolated, reproducible test environment with external-perspective exploitation capability
+\end{enumerate}
+
+\section{Scope and Objectives}
+
+This work focuses on five selected vulnerabilities, chosen because they represent critical classes of verifier failures:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|l|l|}
+\hline
+\textbf{ID} & \textbf{Vulnerability} & \textbf{Type} \\
+\hline
+5.06a & Function Pointer Type Mismatch & ABI/Argument confusion \\
+5.06b & Wrong Number of Arguments & ABI/Argument confusion \\
+5.06d & Wrong Argument Types & ABI/Argument confusion \\
+5.39 & Unprototyped Function Pointer & Stack OOB write \\
+5.46b & Tainted Length (Packet Buffer) & Heap/Stack OOB write \\
+\hline
+\end{tabular}
+\caption{Selected vulnerabilities for practical exploitation study}
+\end{table}
+
+The objectives are to:
+\begin{itemize}
+  \item Demonstrate which verifier bypasses lead to observable runtime effects
+  \item Quantify the severity of each vulnerability (ABI violation vs. memory corruption)
+  \item Document evidence chains showing preservation through compilation, verification, and JIT
+  \item Provide reproducible PoCs and analysis methodology
+\end{itemize}
+
+\section{Report Structure}
+
+\begin{description}
+  \item[Chapters 2--5] Establish eBPF background, threat model, methodology, and test environment
+  \item[Chapter 6] Provide an overview of all five vulnerabilities and their classification
+  \item[Chapters 7--11] Deep-dive analysis of each vulnerability (source, bytecode, verifier, runtime)
+  \item[Chapters 12--15] Synthesize results, discuss limitations, propose future directions, and conclude
+\end{description}

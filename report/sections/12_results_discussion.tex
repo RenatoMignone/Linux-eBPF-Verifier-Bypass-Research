@@ -1,0 +1,159 @@
+\chapter{Results and Discussion}
+\label{ch:results}
+
+\section{Summary of Findings}
+
+This practical exploitation study analyzed five vulnerabilities identified by a prior theoretical assessment. The key finding is a clear \textbf{dichotomy in verifier behavior}:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Vulnerability} & \textbf{Class} & \textbf{Classification} & \textbf{Confidence} \\
+\hline
+5.06a & ABI Mismatch & Runtime Trigger & High \\
+5.06b & ABI Mismatch & Runtime Trigger & High \\
+5.06d & Type Mismatch & Runtime Trigger / Limited & High \\
+5.39 & Taint + Range & Exploitable (Memory Corruption) & Very High \\
+5.46b & Taint + Bounds & Exploitable (Buffer Overflow) & Very High \\
+\hline
+\end{tabular}
+\caption{Classification of five analyzed vulnerabilities}
+\end{table}
+
+\section{Result 1: ABI Mismatches Are Not Blocked}
+
+The \textbf{verifier accepts function calls} with:
+\begin{enumerate}[label=\arabic*.]
+  \item Incompatible type signatures (5.06a)
+  \item Mismatched argument counts (5.06b)
+  \item Type-width mismatches, int vs. long (5.06d)
+\end{enumerate}
+
+\textbf{Evidence:}
+\begin{itemize}
+  \item \textbf{Bytecode}: llvm-objdump confirms the vulnerable function calls exist in compiled code
+  \item \textbf{Verifier}: \texttt{bpftool prog load -d} accepts all three programs without rejection
+  \item \textbf{Xlated}: Post-verification bytecode retains the problematic calls
+  \item \textbf{Runtime}: Kernel trace shows repeated execution of the violated code paths
+\end{itemize}
+
+\textbf{Implication:}
+The \textbf{eBPF verifier does not enforce x86-64 ABI compliance} for function pointers. This is a \textbf{systematic verifier gap} that affects all code using function pointers with non-matching signatures.
+
+\section{Result 2: Taint Tracking Failures Enable Memory Corruption}
+
+The \textbf{verifier fails to properly track tainted values} (user-controlled data) through control flow and into array indices or bounds checks.
+
+\subsection{5.39: Unprototyped Pointer + Tainted Index}
+
+\begin{enumerate}[label=\arabic*.]
+  \item The TCP sequence number is tainted (attacker-controlled via packet)
+  \item Used as an array index in an unprototyped function call
+  \item Verifier cannot track the taint through the function call
+  \item Array access with index $> 15$ goes out-of-bounds
+  \item \textbf{Result}: Stack memory write with attacker-controlled offset
+\end{enumerate}
+
+\subsection{5.46b: Tainted Length in memcpy}
+
+\begin{enumerate}[label=\arabic*.]
+  \item Packet payload length is tainted
+  \item Used as the copy length in \texttt{memcpy(buffer, src, len)}
+  \item Buffer size is 6 bytes; payload length can be 256+
+  \item Verifier's bounds check is insufficient (checks max value, not actual size constraint)
+  \item \textbf{Result}: Stack buffer overflow, 250+ bytes of attacker data written
+\end{enumerate}
+
+\section{Result 3: Vulnerability Survival Through Compilation}
+
+All five vulnerabilities survive the full compilation pipeline:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Vulnerability} & \textbf{Bytecode} & \textbf{Verifier} & \textbf{Xlated} & \textbf{Runtime} \\
+\hline
+5.06a & \checkmark & \checkmark & \checkmark & \checkmark \\
+5.06b & \checkmark & \checkmark & \checkmark & \checkmark \\
+5.06d & \checkmark & \checkmark & \checkmark & \checkmark \\
+5.39 & \checkmark & \checkmark & \checkmark & \checkmark \\
+5.46b & \checkmark & \checkmark & \checkmark & \checkmark \\
+\hline
+\end{tabular}
+\caption{Vulnerability survival across compilation stages}
+\end{table}
+
+This confirms that:
+\begin{itemize}
+  \item LLVM does not optimize away the vulnerabilities
+  \item The verifier accepts programs containing the vulnerabilities
+  \item Post-verification transformation does not sanitize the unsafe code paths
+  \item The vulnerabilities execute at runtime as written
+\end{itemize}
+
+\section{Result 4: Runtime Triggering}
+
+All five vulnerabilities are observable and triggerable via network packets:
+
+\begin{itemize}
+  \item Simple SYN packets to any port trigger 5.06a/b/d (ABI mismatches)
+  \item Crafted SYN packets with specific sequence numbers trigger 5.39 (array indices 16-25)
+  \item TCP packets with oversized payload length trigger 5.46b (buffer overflow)
+\end{itemize}
+
+Kernel trace output (\texttt{trace\_pipe}) provides direct evidence of:
+\begin{enumerate}[label=\arabic*.]
+  \item Code path execution (\texttt{bpf\_printk} signals)
+  \item Array index values (confirming OOB indices)
+  \item Data written (confirming writes occurred)
+\end{enumerate}
+
+
+
+\section{Evidence Validity}
+
+All five vulnerabilities were reproduced multiple times with consistent results. The evidence chain is complete for all cases:
+\begin{itemize}
+  \item Bytecode dumps show the vulnerable instructions
+  \item Verifier logs show acceptance
+  \item Xlated bytecode shows preservation
+  \item Runtime traces show execution and impact
+\end{itemize}
+
+Confidence level: \textbf{Very High} for 5.39 and 5.46b (memory corruption confirmed); \textbf{High} for 5.06a/b/d (runtime triggers confirmed). See Chapter \ref{ch:conclusion} for detailed severity assessment and discussion of verifier weaknesses.
+
+\section{Detailed Evidence Reference Guide}
+
+For each vulnerability, the following structured artifacts are available for independent verification:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Vulnerability} & \textbf{Documentation} & \textbf{Evidence Logs} \\
+\hline
+\multirow{2}{*}{5.06a} & src/exploits/5\_06a\_argcomp/README.md & logs/5\_06a\_bytecode\_analysis.txt \\
+ &  & logs/5\_06a\_verifier\_log.txt \\
+ &  & logs/5\_06a\_xlated\_dump.txt \\
+\hline
+\multirow{2}{*}{5.06b} & src/exploits/5\_06b\_argcomp/README.md & logs/5\_06b\_bytecode\_analysis.txt \\
+ &  & logs/5\_06b\_verifier\_log.txt \\
+ &  & logs/5\_06b\_xlated\_dump.txt \\
+\hline
+\multirow{2}{*}{5.06d} & src/exploits/5\_06d\_argcomp/README.md & logs/5\_06d\_bytecode\_analysis.txt \\
+ &  & logs/5\_06d\_verifier\_log.txt \\
+ &  & logs/5\_06d\_xlated\_dump.txt \\
+\hline
+\multirow{2}{*}{5.39} & src/exploits/5\_39\_taintnoproto/README.md & logs/5\_39\_bytecode\_analysis.txt \\
+ &  & logs/5\_39\_verifier\_log.txt \\
+ &  & logs/5\_39\_xlated\_dump.txt \\
+\hline
+\multirow{2}{*}{5.46b} & src/exploits/5\_46b\_taintsink/README.md & logs/5\_46b\_bytecode\_analysis.txt \\
+ &  & logs/5\_46b\_verifier\_log.txt \\
+ &  & logs/5\_46b\_xlated\_dump.txt \\
+\hline
+\end{tabular}
+\caption{Evidence artifacts and documentation for all vulnerabilities}
+\end{table}

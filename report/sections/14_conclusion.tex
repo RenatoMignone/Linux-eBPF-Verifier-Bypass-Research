@@ -1,0 +1,283 @@
+\chapter{Conclusion}
+\label{ch:conclusion}
+\label{ch:conclusion}
+
+\section{Summary of Contributions}
+
+This report has documented a comprehensive, practical investigation of eBPF verifier logic flaws on Linux LTS 6.8. The work bridges the gap between theoretical vulnerability assessment and practical exploitation, providing:
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Five detailed case studies}: In-depth analysis of real verifier bypasses with complete evidence chains
+  \item \textbf{Reproducible methodology}: A systematic, multi-stage approach to validating eBPF vulnerabilities
+  \item \textbf{Functional PoCs}: Working exploits demonstrating vulnerabilities in a production kernel
+  \item \textbf{Evidence artifacts}: Bytecode, verifier logs, xlated dumps, and runtime traces for each vulnerability
+  \item \textbf{Clear distinction}: Between runtime triggers (ABI mismatches) and true memory corruption primitives
+\end{enumerate}
+
+\section{Key Findings}
+
+\subsection{The Verifier Has Systematic Gaps}
+
+The \textbf{eBPF verifier does not enforce}:
+\begin{itemize}
+  \item \textbf{ABI compliance} for function pointers (all architectures)
+  \item \textbf{Argument type and count matching} in function calls
+  \item \textbf{Tight bounds checking} on tainted (user-controlled) values
+  \item \textbf{Taint propagation} through function call boundaries
+\end{itemize}
+
+These are not isolated bugs but \textbf{systematic limitations} in the verifier's design.
+
+\subsection{Real Vulnerabilities Exist}
+
+Vulnerabilities 5.39 (\textbf{stack OOB write}) and 5.46b (\textbf{stack buffer overflow}) are not theoretical—they are:
+\begin{itemize}
+  \item \textbf{Confirmed to pass the verifier}
+  \item \textbf{Confirmed to compile} to bytecode that preserves the vulnerability
+  \item \textbf{Confirmed to execute} at runtime with observable \textbf{memory corruption}
+  \item \textbf{Feasible to exploit} for privilege escalation with additional effort
+\end{itemize}
+
+\subsection{Evidence Chain Validation}
+
+All five vulnerabilities survive the full pipeline from C source through verification to runtime:
+\begin{enumerate}[label=\arabic*.]
+  \item Bytecode inspection shows the vulnerable instructions exist
+  \item Verifier acceptance confirms the verifier does not catch them
+  \item Xlated dumps prove the vulnerability is not sanitized
+  \item Runtime traces prove the vulnerability executes
+\end{enumerate}
+
+This chain validates that the vulnerabilities are real, not artifacts of analysis tools or compilation quirks.
+
+\section{Impact Assessment}
+
+\subsection{Severity Ranking}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|l|c|}
+\hline
+\textbf{ID} & \textbf{Type} & \textbf{Impact} & \textbf{Severity} \\
+\hline
+5.46b & Buffer Overflow & Privilege escalation to root & CRITICAL \\
+5.39 & Stack OOB Write & Memory corruption, potential code execution & HIGH \\
+5.06d & Type Mismatch & Runtime trigger, potential exploitable in context & MEDIUM \\
+5.06b & Arg Count Mismatch & Runtime trigger, limited direct impact & MEDIUM \\
+5.06a & Type Mismatch & Runtime trigger, limited direct impact & MEDIUM \\
+\hline
+\end{tabular}
+\caption{Severity assessment of analyzed vulnerabilities}
+\end{table}
+
+\subsection{Real-World Implications}
+
+If these vulnerabilities exist in LTS 6.8, systems using eBPF for:
+\begin{itemize}
+  \item DDoS mitigation (SYN proxy, rate limiting)
+  \item Container networking (Cilium)
+  \item Observability (Falco, datadog agent)
+  \item Security enforcement (LSM policies)
+\end{itemize}
+
+...are potentially at risk if:
+\begin{enumerate}[label=\arabic*.]
+  \item Untrusted users can load eBPF programs (requires \texttt{CAP\_BPF})
+  \item Or if malicious network packets can trigger the vulnerability from unprivileged context
+\end{enumerate}
+
+However:
+\begin{itemize}
+  \item eBPF loading typically requires root or explicit capability grants
+  \item Most deployments restrict eBPF program creation
+  \item Newer kernel versions may have fixes (requires backport verification)
+\end{itemize}
+
+\section{Methodological Significance}
+
+This work establishes a rigorous methodology for eBPF vulnerability research:
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Rule-based testing}: Using ISO-IEC standards as a vulnerability catalog
+  \item \textbf{Multi-stage evidence}: Bytecode → Verifier → Xlated → Runtime
+  \item \textbf{Reproducibility}: Git patches, versioned toolchain, documented environment
+  \item \textbf{Classification framework}: Distinguishing triggers from true corruption
+  \item \textbf{Artifact preservation}: Complete logs and PoCs for future analysis
+\end{enumerate}
+
+This methodology can be applied to:
+\begin{itemize}
+  \item Other kernel subsystems
+  \item Other sandbox technologies (WebAssembly, WASI, etc.)
+  \item Different rule standards (CERT, CWE, etc.)
+\end{itemize}
+
+\section{Relationship to Prior Work}
+
+This project builds directly on the prior team's theoretical assessment. Where they asked \textit{``Does the verifier accept this rule violation?''}, this work asked \textit{``Can we actually exploit it?''}
+
+\textbf{Validation}: The prior team's classifications (exploitable, limited, safe) were largely confirmed by this practical work.
+
+\textbf{Extension}: This work added:
+\begin{itemize}
+  \item Functional PoCs and runtime evidence
+  \item Quantification of memory corruption (bytes written, offsets)
+  \item A reproducible test infrastructure
+  \item Clear path to privilege escalation
+\end{itemize}
+
+\section{Recommendations}
+
+\subsection{For Linux Kernel Developers}
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Review and apply} the proposed verifier fixes (ABI checking, taint propagation)
+  \item \textbf{Expand the eBPF test suite} to cover the identified vulnerability patterns
+  \item \textbf{Consider formal verification} of critical verifier components
+  \item \textbf{Backport verifier fixes} to stable kernel releases
+\end{enumerate}
+
+\subsection{For System Administrators}
+
+\begin{enumerate}[label=\arabic*.]
+  \item Audit which systems allow eBPF program loading
+  \item Restrict \texttt{CAP\_BPF} to only trusted users/services
+  \item Disable eBPF entirely on systems that don't require it (\texttt{kernel.unprivileged\_bpf\_disabled=1})
+  \item Monitor for suspicious eBPF program loads and verify their source
+  \item Test updates to kernel LTS versions thoroughly before production deployment
+\end{enumerate}
+
+\subsection{For Application Developers Using eBPF}
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Follow secure coding practices} identified in this report
+  \item \textbf{Avoid function pointers} with implicit prototypes
+  \item \textbf{Use explicit bounds checks} on tainted values from network packets
+  \item \textbf{Have eBPF programs reviewed} by security experts
+  \item \textbf{Test programs} against multiple kernel versions
+\end{enumerate}
+
+\section{Future Work and Research Directions}
+
+\subsection{Immediate Extensions}
+
+The prior team's assessment identified approximately 60 potential violations across ISO-IEC TS 17961-2013 rules. This study analyzed 5 of the most promising cases. Priority extensions include:
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Complete the exploitation}: Demonstrate full privilege escalation for 5.39 and 5.46b through ROP chain development and return address targeting
+  \item \textbf{Analyze remaining vulnerabilities}: Select 10--15 additional "exploitable" or "limited" cases and develop PoCs
+  \item \textbf{Build an automated test harness}: Enable testing of all 60+ patches against the verifier for a complete inventory
+  \item \textbf{ABI chaining}: Investigate whether 5.06a/b/d can leak kernel memory or enable multi-stage attacks
+\end{enumerate}
+
+\subsection{Portability and Generalization}
+
+Future work should assess whether vulnerabilities persist across:
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Kernel versions}: Test on LTS 6.1, 5.15, 5.10 (older) and 6.9, 7.0+ (newer)
+  \item \textbf{CPU architectures}: Verify findings on ARM64, RISC-V, and x86-32
+  \item \textbf{eBPF program types}: Extend beyond XDP to kprobes, tracepoints, TC classifiers, LSM programs
+\end{enumerate}
+
+This will determine:
+\begin{itemize}
+  \item Which kernel versions and architectures are affected
+  \item When/if each verifier bug was fixed
+  \item Whether verifier gaps are universal or architecture-specific
+  \item Real-world impact on diverse deployments
+\end{itemize}
+
+\subsection{Verifier Improvements}
+
+The eBPF verifier should be enhanced to address the identified gaps:
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{ABI enforcement}: Track function pointer types, validate call sites against declarations, reject mismatched argument counts and types
+  \item \textbf{Improved taint tracking}: Propagate taint through function calls, require explicit bounds checking on tainted values, validate that bounds are tight
+  \item \textbf{Test submission}: Submit patches to the Linux kernel to fix each vulnerability class and measure performance impact
+\end{enumerate}
+
+\subsection{Tooling and Automation}
+
+Development of supporting infrastructure:
+
+\begin{enumerate}[label=\arabic*.]
+  \item Automated vulnerability scanner for eBPF programs
+  \item Extension of \texttt{xvtlas} to test all 60+ patches and generate comparative reports
+  \item Modular exploitation framework for eBPF vulnerabilities (payload generation, stack layout detection, privilege escalation chains)
+\end{enumerate}
+
+\subsection{Formal Verification and Fuzzing}
+
+To strengthen eBPF security long-term:
+
+\begin{enumerate}[label=\arabic*.]
+  \item Model the eBPF verifier in a proof assistant (Coq, Isabelle) and formally prove security properties
+  \item Develop fuzzing harnesses to generate random eBPF programs and identify verifier crashes
+  \item Create a continuous fuzzing campaign to proactively find new verifier bugs
+\end{enumerate}
+
+\subsection{Security Standards and Education}
+
+\begin{enumerate}[label=\arabic*.]
+  \item Develop comprehensive eBPF security guidelines documenting secure coding practices and common pitfalls
+  \item Create capture-the-flag challenges based on the identified vulnerabilities
+  \item Establish best practices for secure eBPF program development and deployment
+\end{enumerate}
+
+\subsection{Open Questions}
+
+Key questions for future investigation:
+
+\begin{itemize}
+  \item Can 5.39 or 5.46b be chained with other vulnerabilities for reliable full privilege escalation?
+  \item Do similar vulnerabilities exist in other eBPF program types beyond XDP?
+  \item How many of the 60+ identified violations are actually exploitable?
+  \item Have these vulnerabilities been responsibly disclosed to the Linux kernel team?
+  \item Are these vulnerabilities present in widely-deployed older kernel versions (5.10, 5.15)?
+  \item Can formal verification provide practical assurances for critical verifier components?
+\end{itemize}
+
+\section{Final Thoughts}
+
+\textbf{eBPF} is a powerful technology that has revolutionized Linux observability and networking. Its \textbf{sandboxed execution model} is crucial to its safety story. However, this work demonstrates that \textbf{the sandbox has real gaps}.
+
+\textbf{The good news}:
+\begin{itemize}
+  \item The vulnerabilities require \textbf{specific conditions} (unprototyped pointers, tainted lengths)
+  \item \textbf{Fixes are conceptually straightforward} (better type checking, taint tracking)
+  \item The Linux kernel community has a \textbf{track record of rapidly fixing} security issues
+  \item \textbf{Formal verification and fuzzing} can prevent similar bugs in the future
+\end{itemize}
+
+\textbf{The challenge}:
+\begin{itemize}
+  \item The verifier is \textbf{complex and performance-critical}
+  \item Each fix must \textbf{not slow down} legitimate programs
+  \item \textbf{Backward compatibility} must be maintained
+  \item \textbf{False positives} (rejecting safe programs) must be minimized
+\end{itemize}
+
+This report provides a \textbf{foundation for addressing} these challenges. With \textbf{continued investment in verifier security}, eBPF can become a \textbf{fully-trusted sandbox} for arbitrary code in the Linux kernel.
+
+\section{Repository Artifacts}
+
+All findings, PoCs, and evidence are available in the project repository:
+
+\begin{itemize}
+  \item \textbf{PoCs}: \texttt{src/exploits/5\_06a...5\_46b/} (Python scripts)
+  \item \textbf{Logs}: \texttt{src/exploits/<vuln>/logs/} (bytecode, verifier, xlated dumps)
+  \item \textbf{Documentation}: \texttt{src/exploits/<vuln>/README.md} (per-vulnerability details)
+  \item \textbf{Methodology}: \texttt{src/README.md} (exploitation workflow)
+  \item \textbf{Report}: \texttt{report/} (this LaTeX document)
+\end{itemize}
+
+For reproduction instructions and environment setup, see the main \texttt{README.md} and \texttt{Makefile}.
+
+---
+
+\textbf{Date}: December 2025  
+\textbf{Author}: Renato Mignone  
+\textbf{Course}: Security Verification and Testing  
+\textbf{Institution}: Politecnico di Torino

@@ -1,0 +1,44 @@
+\chapter{Threat Model and Attack Scope}
+
+\section{Attacker Profile}
+
+This work focuses on \textbf{network-adjacent unprivileged attackers} with the ability to send crafted network packets to a target system running eBPF XDP programs. We assume the attacker can craft arbitrary TCP/UDP packets and observe server responses, modeling a realistic network-based attack scenario. The attacker cannot directly modify kernel code, disable security mitigations (KASLR, SMEP), or execute code outside the eBPF sandbox, but can exploit verifier logic flaws to achieve privilege escalation through memory corruption primitives.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Capability} & \textbf{Status} \\
+\hline
+Send arbitrary network packets & Yes \\
+Trigger eBPF program execution & Yes (via XDP hooks) \\
+Observe kernel behavior (trace output, timing) & Yes \\
+Load arbitrary eBPF bytecode & Yes (on accessible systems) \\
+Modify kernel memory via verifier bug & Yes (demonstrated) \\
+\hline
+Directly modify kernel code & No \\
+Bypass KASLR/SMEP without exploitation & No \\
+Execute unrestricted kernel code & No (without privilege escalation) \\
+\hline
+\end{tabular}
+\caption{Attacker capabilities in the threat model}
+\end{table}
+
+\section{Attack Goals}
+
+The primary objective is to exploit eBPF verifier logic bugs to transition from eBPF sandbox execution to unrestricted kernel privileges. Successful exploitation follows a progression: (1) the attacker crafts eBPF bytecode or sends network packets that trigger a verifier logic error; (2) the code executes at runtime with kernel privilege, using the unsafe operation to read or write kernel memory; (3) the attacker chains these primitives to modify kernel data structures—particularly the process credential structure (\texttt{cred})—achieving privilege escalation to root or other high-privilege users.
+
+\section{Scope and Constraints}
+
+This assessment focuses exclusively on XDP hook point vulnerabilities in the Linux eBPF verifier version included in kernel LTS 6.8. The vulnerabilities studied are triggered through network packet injection and do not require local code execution. The test environment isolates the target system (VM) and exploit source (host machine) to create a controlled but realistic external-attack scenario. The evidence chain methodology documents how each vulnerability progresses from bytecode through verifier through JIT to runtime impact, enabling independent reproduction and verification.
+
+\subsection{Out of Scope}
+
+We do not consider kernel vulnerabilities outside the eBPF subsystem (use-after-free, race conditions, filesystem bugs), as those represent distinct security domains. Hardware-level vulnerabilities like Spectre, Meltdown, and rowhammer are beyond the scope of software analysis. Social engineering, physical access attacks, and supply chain compromise are out of scope. We also exclude Denial-of-Service attacks, as our focus is privilege escalation and integrity violation. Testing is limited to the XDP hook; other eBPF program types (kprobes, tracepoints, LSM) are not evaluated. Finally, we test only Linux LTS 6.8; while findings may generalize to nearby kernel versions, our evidence is specific to this version.
+
+\section{Impact Assessment}
+
+If an attacker successfully exploits an eBPF verifier vulnerability within our threat model, the consequences are severe. An unprivileged user with eBPF loading capability gains unrestricted kernel access and can escalate to root. Security systems implemented in eBPF (DDoS defenses, XDP firewalls, kernel monitoring) can be disabled or bypassed. Sensitive kernel information (address space layout, credentials, configuration) becomes accessible. The fundamental security guarantee that ``eBPF is a sandboxed execution environment'' is violated, undermining the assumption that unprivileged eBPF loading is safe.
+
+This threat model justifies our research: discovering, demonstrating, and understanding eBPF verifier bugs is essential for maintaining kernel security in an era where eBPF is increasingly deployed for critical infrastructure.

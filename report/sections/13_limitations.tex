@@ -1,0 +1,146 @@
+\chapter{Limitations}
+\label{ch:limitations}
+
+\section{Scope Limitations}
+
+\subsection{Single Target Program}
+
+This study focuses exclusively on the XDP SynProxy implementation (\texttt{xdp\_synproxy\_kern.c}). While this is a real, production-quality program from the Linux kernel selftests, the findings may not generalize to other eBPF program types (kprobes, tracepoints, LSM, socket filters), different architectural patterns (e.g., programs that don't parse network packets), or user-written eBPF code with different coding practices.
+
+\textbf{Mitigation}: The vulnerabilities tested are rule-based (ISO-IEC TS 17961-2013), which are language-level, not program-specific. Similar patterns in other eBPF code would likely trigger the same verifier failures.
+
+\subsection{Single Kernel Version}
+
+All testing was performed on Linux LTS 6.8. The verifier's implementation changes across kernel versions, so findings may not apply to older kernel versions (6.0, 5.15, 5.10), newer kernel versions (6.9+), or non-LTS kernel branches.
+
+\textbf{Mitigation}: Findings likely apply to nearby kernel versions (6.7, 6.9) that share similar verifier code. Significant changes (e.g., major refactoring of bounds tracking) would require re-testing.
+
+\subsection{XDP Program Type Only}
+
+The vulnerabilities were triggered through XDP hooks. Other eBPF program types (kprobes, TC classifiers, LSM) may have different verifier modes (some are more permissive), execution contexts, and helper function availability.
+
+\textbf{Mitigation}: The rule violations (ISO-IEC TS 17961-2013) are not program-type-specific, so similar vulnerabilities should exist across all program types.
+
+\section{Technical Limitations}
+
+\subsection{ABI Mismatch Cases Are Runtime Triggers, Not Corruption}
+
+Vulnerabilities 5.06a, 5.06b, and 5.06d are demonstrated as runtime triggers (observable behavior), not as confirmed memory corruption in the test environment. The lack of corruption could be due to:
+\begin{enumerate}[label=\arabic*.]
+  \item The specific code context not dereferencing misaligned values
+  \item The XDP execution environment isolating some effects
+  \item Stack layout preventing overwrites of critical data
+\end{enumerate}
+
+\textbf{Implication}: While 5.06a/b/d are confirmed to pass the verifier and execute, their full exploitability depends on the application context. They are valuable as demonstrations of verifier bypass rather than as standalone exploitation primitives.
+
+\subsection{Stack Layout Assumptions}
+
+Exploitation of 5.39 and 5.46b depends on knowledge of the kernel's stack frame layout. While the overflow is confirmed, precise targeting of return addresses or function pointers requires knowledge of the exact offset from buffer to saved RIP, debugging symbols or reverse engineering the XDP processing function, and potentially a KASLR defeat mechanism if kernel addresses are needed.
+
+\textbf{Practical impact}: In a real exploit, stack layout is often determined via information disclosure or trial-and-error. The PoCs demonstrate the vulnerability exists, not a complete end-to-end exploit.
+
+\subsection{JIT Disassembly Unavailable on Some Platforms}
+
+The optional JIT inspection step requires x86-64 architecture (ARM64 and RISC-V support exists but may differ), readable JIT output enabled in kernel config, and access to \texttt{/proc/sys/net/core/bpf\_jit\_kallsyms}.Without JIT output, verification can only proceed through bytecode and xlated dumps. The vulnerability is still confirmed, but the full execution path is not visible.
+
+\textbf{Mitigation}: Xlated output is sufficient to prove the vulnerability survives verification and reaches runtime.
+
+\section{Methodology Limitations}
+
+\subsection{No Formal Verification of Exploitability}
+
+The classification of 5.39 and 5.46b as exploitable is based on:
+\begin{enumerate}[label=\arabic*.]
+  \item Confirmed memory writes to out-of-bounds locations
+  \item Attacker control over the data and offset
+  \item Potential to overwrite critical kernel structures
+\end{enumerate}
+
+However, an end-to-end exploit to privilege escalation was not demonstrated in this report. The limitation is:
+\begin{itemize}
+  \item Exploitation requires additional context-specific knowledge (stack layout, ROP gadgets)
+  \item Some assumptions (e.g., return address location) were not exhaustively verified
+\end{itemize}
+
+\textbf{Confidence level}: Very high that the vulnerabilities exist and are memory-corrupting; high (but not absolute certainty) that full privilege escalation is achievable with additional work.
+
+\subsection{PoC Reliability}
+
+The PoC scripts use heuristics (e.g., guessing packet arrival timing, assuming specific stack layout) that may not work reliably across all test environments. The PoCs are sufficient to demonstrate the vulnerability in the test setup but may require tuning for production use.
+
+\subsection{Limited Verification of Compiler Behavior}
+
+The bytecode analysis relies on LLVM's compilation output. Assumptions made:
+\begin{enumerate}[label=\arabic*.]
+  \item LLVM 15+ (used in the test environment)
+  \item Optimization level -O2 (standard for eBPF)
+  \item No special compiler flags or pragma directives
+\end{enumerate}
+
+Different compiler versions or flags could theoretically change the bytecode (though unlikely for the test cases studied).
+
+\section{Environmental Limitations}
+
+\subsection{VM-Based Testing}
+
+Testing was performed on a KVM/QEMU VM, not on bare metal. Potential differences:
+\begin{itemize}
+  \item Virtualization overhead may mask timing side-channels
+  \item Device emulation may not replicate all hardware behaviors
+  \item VM isolation may prevent some attacks (e.g., direct hardware access)
+\end{itemize}
+
+\textbf{Likelihood of real-world differences}: Low. XDP and eBPF verifier behavior should be identical on bare metal.
+
+\subsection{Controlled Network Environment}
+
+Testing used local network connectivity within the lab. Real-world considerations:
+\begin{itemize}
+  \item Network filtering (firewalls, WAF) might block or modify crafted packets
+  \item NAT and checksum offloading might interfere with raw socket PoCs
+  \item Rate limiting might prevent rapid packet sequences
+\end{itemize}
+
+\textbf{Mitigation}: All exploits are designed to work with a single packet, so rate limiting and filtering are not major concerns.
+
+\section{Documentation and Reproducibility Limitations}
+
+\subsection{Partial Dependency on Lab Environment}
+
+Full reproduction requires:
+\begin{enumerate}[label=\arabic*.]
+  \item Ubuntu 24.04 with LTS 6.8 kernel (specific)
+  \item Pre-compiled toolchain (clang, llvm 15+)
+  \item Specific VM configuration (4 GB RAM, 2 vCPU)
+\end{enumerate}
+
+Slightly different configurations may require adjustments (e.g., kernel module, driver versions).
+
+\textbf{Mitigation}: The Makefile and vmctl.sh script automate setup. Documentation is provided for common troubleshooting steps.
+
+\section{Summary of Key Limitations}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|c|}
+\hline
+\textbf{Limitation} & \textbf{Impact} & \textbf{Severity} \\
+\hline
+Single target program (XDP SynProxy) & Findings may not generalize widely & Medium \\
+Single kernel version (LTS 6.8) & Older/newer kernels not tested & Medium \\
+ABI cases are triggers, not corruption & Exploitability requires context & Low \\
+Stack layout assumptions & Full exploit requires additional work & Medium \\
+No bare-metal testing & VM isolation minimal; unlikely impact & Low \\
+\hline
+\end{tabular}
+\caption{Summary of key limitations and impact assessment}
+\end{table}
+
+Despite these limitations, the core findings are robust:
+\begin{itemize}
+  \item The eBPF verifier accepts multiple rule violations
+  \item These violations result in executable bytecode
+  \item The bytecode produces observable runtime effects
+  \item Two cases (5.39, 5.46b) produce confirmed memory corruption
+\end{itemize}

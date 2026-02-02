@@ -1,0 +1,80 @@
+\documentclass[11pt,a4paper,openany]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{pifont}
+\usepackage{tcolorbox}
+
+\makeatletter
+\renewcommand\chapter{\@startsection{chapter}{0}{\z@}%
+  {-3.5ex \@plus -1ex \@minus -.2ex}%
+  {2.3ex \@plus .2ex}%
+  {\normalfont\Huge\bfseries}}
+\makeatother
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+\title{Practical Exploitation of Linux eBPF Verifier Vulnerabilities (LTS 6.8)}
+\author{Renato Mignone}
+\date{February 2026}
+
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{0.5cm}
+  \includegraphics[width=0.4\textwidth]{resources/images/polito_logo.png}
+
+  \vspace{1.5cm}
+  {\LARGE Politecnico di Torino \par}
+  \vspace{0.4cm}
+  {\large Security Verification and Testing \par}
+
+  \vspace{1.2cm}
+  {\LARGE\bfseries Practical Exploitation of Linux eBPF Verifier Vulnerabilities (LTS 6.8)\par}
+
+  \vspace{1.5cm}
+  {\Large\bfseries Renato Mignone\par}
+  \vspace{0.2cm}
+  {\large Matricola: s336973\par}
+
+  \vfill
+  {\large February 2026\par}
+\end{titlepage}
+\tableofcontents
+\clearpage
+
+\input{sections/00_abstract}
+\input{sections/01_introduction}
+\input{sections/02_background}
+\input{sections/03_threat_model}
+\input{sections/04_methodology}
+\input{sections/05_environment}
+\input{sections/06_vulnerability_overview}
+\input{sections/07_5_06a_argcomp}
+\input{sections/08_5_06b_argcomp}
+\input{sections/09_5_06d_argcomp}
+\input{sections/10_5_39_taintnoproto}
+\input{sections/11_5_46b_taintsink}
+\input{sections/12_results_discussion}
+\input{sections/13_limitations}
+\input{sections/14_conclusion}
+
+\end{document}

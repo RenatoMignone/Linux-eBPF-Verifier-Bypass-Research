@@ -1,0 +1,184 @@
+\chapter{Environment and Tooling}
+
+\section{Test Environment Overview}
+
+The practical exploitation work requires a controlled, reproducible test environment that supports eBPF program loading, XDP attachment, packet generation, and kernel tracing. Our environment is built on Linux LTS 6.8 running inside a KVM/QEMU virtual machine with 2 vCPUs, 4 GB of RAM, and a 20 GB virtual disk. The base image is Ubuntu 24.04 (Noble) Cloud Image, chosen for its balance of stability, standardization, and tooling availability. This configuration ensures that any finding can be reproduced on an identically configured system.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{resources/images/VM_Structure.jpg}
+\caption{VM Architecture: Isolated test environment for safe vulnerability exploitation}
+\end{figure}
+
+\subsection{VM Lifecycle Management}
+
+The repository infrastructure for VM management was created by a previous research team and included a \texttt{virt/vmctl.sh} script that automates VM creation, provisioning, connection, and teardown. For this work, we extended the original setup with modifications to the cloud-init provisioning scripts and network configuration to support external exploitation scenarios. The modified environment now enables bridged networking that allows the host machine to directly target the VM's network stack, simulating real-world attack conditions where an attacker operates from an external network rather than local context.
+
+To create and provision a VM, an operator invokes the script with their SSH public key, and cloud-init automatically installs all necessary dependencies with our enhancements. SSH access to the VM is passwordless, facilitating automated testing pipelines. The script also provides a \texttt{connect} subcommand for interactive debugging and a \texttt{destroy} subcommand for cleanup.
+
+VM provisioning via cloud-init installs a comprehensive development environment: the clang and llvm compilers for eBPF bytecode generation, bpftool for kernel interaction, linux-headers matching the kernel version, network utilities (netcat, tcpdump, iproute2), build tools (make, git, gcc), and configures SSH key injection for passwordless access. This ensures the VM is ready for testing immediately after creation.
+
+Additionally, we configured a shared folder between the host machine and the guest VM, mounted at \texttt{/shared} in the VM. This shared directory allows seamless transfer of exploit payloads, proof-of-concept scripts, and compiled binaries from the host to the VM without requiring manual SCP transfers, streamlining the iterative testing workflow. The shared folder also enables the host machine to directly execute exploit scripts that target the VM's XDP interface over the network, establishing a true external-attacker perspective.
+
+\subsection{Network Configuration for XDP and External Exploitation}
+
+XDP program attachment requires a real Ethernet interface (not virtual) so that packets are processed at the driver level before entering the kernel's normal networking stack. The test environment configures the VM with Layer 2 connectivity to the host via bridge networking, a standard MTU of 1500 bytes, and promiscuous mode enabled on the XDP-attached interface. This configuration allows the test harness running on the host to send arbitrary packets to the VM's interface and observe the XDP program's processing.
+
+The key innovation is the \textbf{external-perspective exploitation}: rather than triggering vulnerabilities from within the VM itself, we deploy exploit code on the host machine that targets the VM's network interface over the network boundary. This setup provides a \textbf{real-world exploitation scenario} where an unprivileged attacker sends crafted TCP packets from an external source (the host) to an eBPF program running on a network-attached server (the VM). This approach better models realistic attack conditions than local-only exploitation, demonstrating that eBPF verifier failures can be exploited from a network-adjacent attacker position.
+
+\section{Compilation Pipeline}
+
+\subsection{C to eBPF Bytecode}
+
+The eBPF compilation process begins with clang targeting the eBPF instruction set. The standard invocation is:
+
+\begin{verbatim}
+clang -O2 -target bpf -c xdp_synproxy_kern.c -o xdp_synproxy_kern.o
+\end{verbatim}
+
+The \textbf{-O2} optimization level is critical because \texttt{-O0} may preserve temporary variables and memory operations that the optimizer would normally eliminate. The \textbf{-target bpf} flag directs compilation to the eBPF instruction set rather than the native host architecture (x86-64, ARM, etc.). The \textbf{-c} flag produces an object file without linking, since eBPF programs are self-contained units without external symbol dependencies.
+
+\subsection{Bytecode Inspection with llvm-objdump}
+
+After compilation, we inspect the bytecode to confirm the vulnerable code path is present and was not optimized away:
+
+\begin{verbatim}
+llvm-objdump -d xdp_synproxy_kern.o | grep -A 50 "tcp_dissect"
+\end{verbatim}
+
+This inspection reveals the full instruction sequence in the vulnerable function, register usage patterns, memory access operations (loads and stores), and bounds checks or arithmetic that might be relevant to the vulnerability. This step is essential to prove that the compiler did not inadvertently eliminate the vulnerability through dead-code elimination or aggressive optimization.
+
+\section{Kernel Tools and eBPF Loading}
+
+The bpftool utility is the primary interface for interacting with loaded eBPF programs. To load a compiled eBPF object file and capture verifier diagnostics, we use:
+
+\begin{verbatim}
+bpftool prog load xdp_synproxy_kern.o /sys/fs/bpf/my_prog \
+  type xdp verbose 2>&1 | tee verifier.log
+\end{verbatim}
+
+The \texttt{verbose} flag is essential; it causes the kernel to output the verifier's complete internal reasoning, including the register types and ranges tracked at each instruction, the constraints on memory offsets, and the specific reasoning for any rejection. These logs are piped to a file for post-analysis and evidence documentation.
+
+After successful loading, attaching the program to a network interface is straightforward:
+
+\begin{verbatim}
+ip link set dev enp2s0 xdp obj xdp_synproxy_kern.o sec .text
+\end{verbatim}
+
+Packets arriving on \texttt{enp2s0} are now processed by the eBPF program at the driver level, before entering the kernel's normal networking stack. This is the execution point where vulnerabilities manifest.
+
+Post-verification, the kernel performs internal bytecode transformations and optimizations. These can be inspected via the \textit{xlated} dump:
+
+\begin{verbatim}
+bpftool prog dump xlated name my_prog > xlated.dump
+\end{verbatim}
+
+The xlated dump shows the bytecode as it exists in kernel memory after the verifier has processed it. This proves whether the vulnerability survived verification intact or was transformed/sanitized. On x86-64 architectures with JIT compilation enabled, the native instructions can be inspected via:
+
+\begin{verbatim}
+bpftool prog dump jited name my_prog > jited.dump
+\end{verbatim}
+
+This reveals the actual x86 assembly instructions executed at runtime, completing the evidence chain from high-level C code through bytecode, through verifier, through JIT, to final machine instructions.
+
+\section{Runtime Observation and Debugging}
+
+\subsection{Kernel Tracing with trace\_pipe}
+
+eBPF debug output uses the \texttt{bpf\_printk} macro, which writes messages to the kernel trace buffer. These can be observed in real-time via:
+
+\begin{verbatim}
+cat /sys/kernel/debug/tracing/trace_pipe
+\end{verbatim}
+
+During PoC execution, trace output confirms that specific code paths are executing and vulnerabilities are being triggered. Example output from vulnerability testing:
+
+\begin{verbatim}
+[argcomp]: 5.6a - csum
+[taintnoproto]: 5.39 - OOB index: 18
+[taintsink]: 5.46b - Copy length: 256
+\end{verbatim}
+
+Each line corresponds to a vulnerability test; the messages confirm that the vulnerable code executed and reached the instrumentation point. This provides immediate feedback during exploitation attempts.
+
+\section{Proof-of-Concept Development}
+
+\subsection{High-Level Packet Crafting with Scapy}
+
+Most PoCs use Python with the Scapy library for high-level packet construction. A typical exploit:
+
+\begin{verbatim}
+from scapy.all import IP, TCP, send
+pkt = IP(dst=target_ip) / TCP(dport=80, flags="S", seq=exploit_seq)
+send(pkt, verbose=False)
+\end{verbatim}
+
+This approach offers simplicity and readability: the packet structure is obvious from the Python code, headers are automatically generated, checksums are computed automatically, and parameters can be easily varied for different attack scenarios. The primary limitation is that the kernel's network stack may perform checksum offloading or other transformations that prevent precise low-level manipulation. For simple network-based vulnerabilities, this is sufficient.
+
+\subsection{Raw Sockets for Low-Level Control}
+
+For cases requiring precise control over checksums and headers, raw socket code in C/Python is used:
+
+\begin{verbatim}
+sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_TCP)
+sock.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
+# Construct packet bytes and send
+sock.sendto(packet_bytes, (target_ip, 0))
+\end{verbatim}
+
+This allows:
+\begin{itemize}
+  \item Direct control over every field (including malformed checksums)
+  \item Bypassing kernel TCP stack validation
+  \item Triggering edge cases in parsing logic
+\end{itemize}
+
+\section{Testing Session Automation: tmux}
+
+The \texttt{start\_session.sh} script creates a tmux session with three panes:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Pane} & \textbf{Purpose} \\
+\hline
+1. Loader output & Shows XDP program attachment status \\
+2. Netcat server & Listens on port 80 to accept connections \\
+3. Kernel trace & Real-time \texttt{trace\_pipe} output \\
+\hline
+\end{tabular}
+\caption{tmux session structure for testing}
+\end{table}
+
+This setup allows monitoring program load status, server state, and kernel debug output simultaneously.
+
+\section{Dependency Summary}
+
+All dependencies are pre-installed in the provisioned VM. On a fresh Ubuntu 24.04 system, install:
+
+\begin{verbatim}
+apt-get update
+apt-get install -y \
+  clang llvm llvm-tools \
+  bpf-tools \
+  linux-headers-6.8 \
+  netcat-openbsd tcpdump iproute2 \
+  tmux git make python3-scapy
+\end{verbatim}
+\section{Kernel and Target}
+\begin{itemize}
+  \item Linux Kernel LTS 6.8
+  \item XDP SynProxy (selftests) as target program
+\end{itemize}
+
+\section{Tooling}
+\begin{itemize}
+  \item \texttt{clang/llvm} for compilation and \texttt{llvm-objdump} for bytecode inspection
+  \item \texttt{bpftool} for load, verifier logs, and \texttt{xlated/jited} dumps
+  \item \texttt{trace\_pipe} for runtime evidence
+  \item PoCs in Python (Scapy or raw sockets) for traffic generation
+\end{itemize}
+
+\section{Workspace Structure}
+Per-vulnerability artifacts are stored in \texttt{src/exploits/<vuln\_id>/} with dedicated READMEs, logs, and proofs. Repository-level setup notes are documented in \texttt{src/MODs.md}.

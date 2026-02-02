@@ -6,6 +6,8 @@
 Prerequisite: Read the main README first to understand eBPF, the verifier, and the inherited vulnerability assessment.
 > 
 
+> **Note:** See [src/MODs.md](src/MODs.md) for a complete list of modifications made relative to the previous team’s repository to ensure a consistent and reproducible setup.
+
 ---
 
 ## 1. Scope & Objective
@@ -56,6 +58,8 @@ Follow this standard procedure for testing any of the assigned vulnerabilities.
 
 Inside the VM, navigate to the target directory and apply the specific patch you want to test.
 
+**Important:** Run `git apply` from the root of the other team’s codebase (e.g., `/mnt/shared/`). The patch path must be **relative to that root**; otherwise `git apply` will fail to locate files.
+
 ```bash
 # Example: Apply the 5.46b vulnerability patch
 git apply XDPs/xdp_synproxy/patches/5_46b_taintsink/0001-feat-5.46-taintsink_2-Tainted-potentially-mutilated-.patch
@@ -88,18 +92,20 @@ This launches a **tmux session** with three panes:
 2. **Netcat Server:** Listens on Port 80 to receive traffic.
 3. **Kernel Trace Pipe:** Displays real-time `bpf_printk` debug logs from the kernel.
 
+For tmux navigation and session controls, see the **Tips & Troubleshooting** section in [Part 5](#5-tips--troubleshooting).
+
 ### Step 4: Trigger the Exploit (Host)
 
 Switch to your **Host machine**. You can trigger the vulnerability using standard tools (like `netcat`) or specific exploit scripts.
 
-- **Basic Trigger (Netcat):**Bash
-    
+- **Basic Trigger (Netcat):**
+
     `nc <VM_IP> 80 -v`
-    
-- Advanced Exploitation (Python/Scapy):Bash
-    
+
+- **Advanced Exploitation (Python/Scapy or Raw Sockets):**
+
     Specific exploit scripts are located in the src/exploits/ directory. These scripts craft malicious packets (e.g., with manipulated checksums or headers) to bypass initial checks and trigger specific memory corruption paths.
-    
+
     `# Example
     cd src/exploits/5_46b_taintsink/
     sudo python3 poc_546b_final.py`
@@ -109,8 +115,17 @@ Switch to your **Host machine**. You can trigger the vulnerability using standar
 
 Observe the **Kernel Trace Pipe (Pane 3)** in the VM.
 
-- **Success:** Look for logs indicating Out-of-Bounds access (e.g., `index: 60` or `Content: 42`).
+- **Success:** Look for logs indicating the success of the exploit (e.g., `index: 60` or `Content: 42`).
 - **Failure:** If no logs appear, check if the packet was dropped by the XDP parser (checksum errors) or if the VM interface is down.
+
+**Additional analysis steps (as used in the reports):**
+
+1. **Bytecode dump (`llvm-objdump`)** — Confirms the vulnerable path exists in the compiled `.o` and wasn’t optimized away. This validates the issue at the compiler output stage.
+2. **Verifier log (`bpftool prog load -d`)** — Captures loader/verifier output to confirm the program is accepted and to gather reasoning/range data when available.
+3. **Translated bytecode (`bpftool prog dump xlated`)** — Shows the verifier‑processed program, proving whether the unsafe path survived verification.
+4. **JIT dump (`bpftool prog dump jited`)** — If available, confirms the **native** instructions still implement the unsafe path after JIT translation.
+
+These steps establish a full evidence chain: **C source → .o bytecode → verifier view → xlated → JIT**, making it clear where the issue is preserved or mitigated.
 
 ---
 
@@ -118,7 +133,7 @@ Observe the **Kernel Trace Pipe (Pane 3)** in the VM.
 
 From the original dataset of 60+ patches, the following 5 vulnerabilities were selected for in-depth practical exploitation. These were chosen because they represent critical failures in the eBPF verifier's ability to track types, bounds, or memory safety contexts.
 
-**Detailed exploitation reports, Proof-of-Concept (PoC) scripts, and evidence logs are located in the specific subdirectory for each vulnerability.**
+**Detailed exploitation reports, Proof-of-Concept (PoC) scripts, and evidence logs are located in the specific subdirectory for each vulnerability.** Each vulnerability folder includes its own comprehensive README to explain the issue, evidence, and reproduction steps in depth (see the per‑vulnerability folders under src/exploits/).
 
 | **ID** | **Vulnerability Name** | **ISO Rule** | **Description of Flaw** | **Analysis Location** |
 | --- | --- | --- | --- | --- |
@@ -146,16 +161,16 @@ From the original dataset of 60+ patches, the following 5 vulnerabilities were s
     
     `git apply -R patches/<previous_patch>.patch`
     
-
 ---
 
 ## Summary
 
-1. **Provision** the VM: `make create` -> `make connect`.
+1. **Provision** the VM: `make create`. This opens the VM terminal.
 2. **Patch** the target code in `/mnt/shared/XDPs/xdp_synproxy/`.
 3. **Compile** with `make`.
 4. **Load** with `./start_session.sh`.
 5. **Exploit** from the host using scripts in `src/exploits/`.
 6. **Verify** using the kernel trace output.
+7. **Analyze** with bytecode, verifier, xlated, and (if supported) JIT dumps to complete the evidence chain.
 
 This workflow ensures a reproducible, step-by-step process for validating eBPF verifier failures.
