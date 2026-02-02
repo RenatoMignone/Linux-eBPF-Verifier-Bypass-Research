@@ -105,7 +105,7 @@ At any stage, the vulnerability can be neutralized:
 \begin{itemize}
   \item LLVM may dead-code-eliminate a branch
   \item eBPF's memory model (512-byte stack, 64-bit registers) may force safe translation
-  \item The JIT compiler may use different register allocation than expected
+  \item The runtime verifier may reject or transform unsafe operations
 \end{itemize}
 
 \textbf{Implication}: This work must analyze the bytecode produced, not just the C source code, to confirm vulnerabilities survive compilation.

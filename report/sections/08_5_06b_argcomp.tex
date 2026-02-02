@@ -17,6 +17,7 @@ A function is declared and called with more arguments than its signature expects
 \texttt{0001-feat-5.06b-wrong-argument-count.patch}
 \end{small}
 
+\noindent
 Applied to \texttt{xdp\_synproxy\_kern.c}:
 
 \vspace{0.3cm}
@@ -34,8 +35,10 @@ Applied to \texttt{xdp\_synproxy\_kern.c}:
 }
 \vspace{0.3cm}
 
+\noindent
 \subsection{Bytecode-Level Evidence}
 
+\noindent
 Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}, the compiled bytecode shows:
 
 \vspace{0.3cm}
@@ -55,6 +58,7 @@ Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}, the compiled bytecode show
 }
 \vspace{0.3cm}
 
+\noindent
 The compiled bytecode shows both the network copy helper copy sequence and the argcomp printk, confirming that the vulnerable call path and its runtime signal exist before the verifier sees the program. Detailed bytecode analysis is available in the evidence logs.
 
 \noindent
@@ -62,8 +66,10 @@ The compiled bytecode shows both the network copy helper copy sequence and the a
 
 \section{Runtime Behavior}
 
+\noindent
 \subsection{Triggering the Vulnerability}
 
+\noindent
 Send SYN packets to the XDP interface:
 
 \vspace{0.3cm}
@@ -79,6 +85,7 @@ Send SYN packets to the XDP interface:
 
 \subsection{Observable Effects}
 
+\noindent
 Kernel trace output:
 
 \vspace{0.3cm}
@@ -90,14 +97,17 @@ Kernel trace output:
 }
 \vspace{0.3cm}
 
+\noindent
 Repeated for each triggered packet, proving the function executes despite the argument count mismatch. The trace signal confirms that the vulnerable code path is executed at runtime.
 
 \subsection{Why No Corruption?}
 
+\noindent
 The extra arguments are simply ignored by the called function because arguments are passed via fixed registers (R1-R5), and the callee only consumes the registers it expects. However, the XDP context's register state is perturbed, and if the extra arguments contained sensitive values (e.g., kernel pointers), they might be disclosed. Additionally, subsequent code using registers R2 and R3 might rely on uninitialized or wrong values, creating a potential information disclosure pathway.
 
 \section{Verification Evidence: Xlated Dump}
 
+\noindent
 The \texttt{xlated} dump (verifier-processed bytecode) confirms the vulnerable call survives verification:
 
 \vspace{0.3cm}
@@ -116,6 +126,7 @@ The \texttt{xlated} dump (verifier-processed bytecode) confirms the vulnerable c
 }
 \vspace{0.3cm}
 
+\noindent
 The verifier-processed bytecode still contains the copy sequence and the printk call, so the argcomp path survives verification and remains executable at runtime.
 
 \noindent
@@ -123,10 +134,12 @@ The verifier-processed bytecode still contains the copy sequence and the printk 
 
 \section{Classification: Runtime Trigger}
 
+\noindent
 The verifier accepts mismatched argument counts, the bytecode preserves the call, and runtime executes the call. However, there is no direct memory corruption in this case and the extra arguments are ignored, not dereferenced.
 
 \section{Exploitation Potential}
 
+\noindent
 In isolation, 5.06b is a runtime trigger. However:
 \begin{enumerate}[label=\arabic*.]
   \item If extra arguments contain pointers, information disclosure is possible
@@ -136,6 +149,7 @@ In isolation, 5.06b is a runtime trigger. However:
 
 \section{PoC Code}
 
+\noindent
 \texttt{src/exploits/5\_06b\_argcomp/poc\_506b\_final.py} sends SYN packets to trigger the vulnerable call path.
 
 \textbf{Artifact Logs:}

@@ -60,6 +60,7 @@ Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}, the compiled bytecode exhi
 }
 \vspace{0.3cm}
 
+\noindent
 Compiled eBPF bytecode shows:
 \begin{enumerate}[label=\arabic*.]
   \item Assignment of the function address to a register
@@ -76,6 +77,7 @@ Full bytecode dump available in \texttt{src/exploits/5\_06a\_argcomp/logs/5\_06a
 
 \subsection{Verifier Analysis}
 
+\noindent
 The kernel's eBPF verifier processes this code and:
 \begin{enumerate}[label=\arabic*.]
   \item Sees the function pointer call
@@ -94,16 +96,19 @@ See the verifier log file for detailed output.
 
 \subsection{Triggering the Vulnerability}
 
+\noindent
 On the host, send a SYN packet to the VM running the XDP program:
 
 \begin{verbatim}
 python3 src/exploits/5_06a_argcomp/poc_506a_final.py <VM_IP>
 \end{verbatim}
 
+\noindent
 This sends a standard TCP SYN packet that reaches the \texttt{tcp\_dissect()} function, triggering the mismatched function pointer call.
 
 \subsection{Concrete Example: Bytecode Preservation Through Verification}
 
+\noindent
 The \texttt{xlated} dump (verifier-processed bytecode) confirms the vulnerable path survives verification:
 
 \vspace{0.3cm}
@@ -119,11 +124,12 @@ The \texttt{xlated} dump (verifier-processed bytecode) confirms the vulnerable p
 }
 \vspace{0.3cm}
 \vspace{0.3cm}
-
+\noindent
 The fact that this instruction appears in the \texttt{xlated} output proves the verifier did not remove or sanitize the vulnerable call path. Detailed dumps are available in the evidence directory.
 
 \subsection{Observable Effects}
 
+\noindent
 In the kernel trace (\texttt{trace\_pipe}):
 
 \vspace{0.3cm}
@@ -135,12 +141,15 @@ In the kernel trace (\texttt{trace\_pipe}):
 }
 \vspace{0.3cm}
 
+\noindent
 The trace output is repeated whenever a SYN packet triggers the vulnerable code path, proving that the vulnerability executes at runtime despite the ABI mismatch. This observable trace confirms the verifier acceptance of the vulnerable code.
 
+\noindent
 \textbf{Interpretation}: The \texttt{bpf\_printk} is executed, confirming the code path is reached. No crash or exception occurs, and the mismatched call does not immediately cause memory corruption.
 
 \subsection{Why No Crash?}
 
+\noindent
 In this specific case:
 \begin{enumerate}[label=\arabic*.]
   \item The XDP context provides some garbage values in registers
@@ -151,6 +160,7 @@ In this specific case:
 
 \section{Exploitation Potential}
 
+\noindent
 While 5.06a is not directly exploitable, it could be leveraged in a multi-stage attack:
 
 \begin{enumerate}[label=\arabic*.]
@@ -161,6 +171,7 @@ While 5.06a is not directly exploitable, it could be leveraged in a multi-stage 
 
 \section{PoC Code}
 
+\noindent
 The PoC is located in \texttt{src/exploits/5\_06a\_argcomp/poc\_506a\_final.py} and uses Scapy to send standard SYN packets:
 
 \vspace{0.3cm}
@@ -178,8 +189,7 @@ The PoC is located in \texttt{src/exploits/5\_06a\_argcomp/poc\_506a\_final.py} 
 }
 \vspace{0.3cm}
 \vspace{0.3cm}
-
-\textbf{Artifact Logs:}
+\noindent\textbf{Artifact Logs:}
 \begin{itemize}
   \item Bytecode analysis: \texttt{5\_06a\_bytecode\_analysis.txt}
   \item Verifier output: \texttt{5\_06a\_verifier\_log.txt}
@@ -188,6 +198,7 @@ The PoC is located in \texttt{src/exploits/5\_06a\_argcomp/poc\_506a\_final.py} 
 
 \section{Verifier Gap Identified}
 
+\noindent
 The verifier should:
 \begin{enumerate}[label=\arabic*.]
   \item Track function pointer types throughout their lifetime

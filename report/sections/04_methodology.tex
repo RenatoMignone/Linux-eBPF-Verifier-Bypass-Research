@@ -16,8 +16,6 @@ The core methodology is the \textbf{evidence chain}: demonstrating that a vulner
   \item \textbf{Translated Bytecode}: If the verifier accepts the program, dump the verifier's post-processing output using \texttt{bpftool prog dump xlated}. This shows the verifier-processed bytecode and confirms that the unsafe path was not eliminated by verification.
   
   \item \textbf{Runtime Trigger}: Craft PoC code (Python/Scapy or raw sockets) to execute the vulnerable code path at runtime. Send specially crafted network packets to the interface where the XDP program is attached. Observe behavior via kernel trace output.
-  
-  \item \textbf{JIT Inspection} (optional): If the architecture supports readable JIT dumps, extract native instructions using \texttt{bpftool prog dump jited}. Confirm that the vulnerability is preserved through JIT compilation.
 \end{enumerate}
 
 \section{Vulnerability Injection via Git Patches}
@@ -40,7 +38,7 @@ The compilation pipeline begins with clang, which translates C code to eBPF byte
 
 \subsection{Kernel Tools}
 
-Kernel interaction is mediated through several essential tools. The bpftool utility loads programs into the kernel, captures verifier output (including log files when requested), and dumps bytecode in multiple representations (xlated, jited). The trace\_pipe interface provides access to kernel trace output, particularly \texttt{bpf\_printk} debug messages that PoC code can use to communicate status to user-space. The ip link command attaches and detaches XDP programs to specific network interfaces, a prerequisite for triggering execution.
+Kernel interaction is mediated through several essential tools. The bpftool utility loads programs into the kernel, captures verifier output (including log files when requested), and dumps bytecode in multiple representations (xlated). The trace\_pipe interface provides access to kernel trace output, particularly \texttt{bpf\_printk} debug messages that PoC code can use to communicate status to user-space. The ip link command attaches and detaches XDP programs to specific network interfaces, a prerequisite for triggering execution.
 
 \subsection{PoC Development}
 
@@ -88,7 +86,7 @@ The previous team's infrastructure provided a solid foundation but required sign
 
 \item \textbf{Problem}: The previous team's \texttt{vmctl.sh} script referenced a cloud-init user-data file that was not included in the repository.
 
-\item \textbf{Solution}: Created a comprehensive cloud-init configuration with: eBPF development tools (clang, llvm, bpftool), network utilities for testing (tcpdump, netcat, tshark, hping3), development tools (tmux, vim, git, make), post-boot initialization (eBPF JIT enablement, kernel module loading), and SSH key-based authentication.
+\item \textbf{Solution}: Created a comprehensive cloud-init configuration with: eBPF development tools (clang, llvm, bpftool), network utilities for testing (tcpdump, netcat, tshark, hping3), development tools (tmux, vim, git, make), kernel module loading support, and SSH key-based authentication.
 
 \item \textbf{Impact}: Enabled automated VM provisioning with all required tools pre-installed and configured.
 \end{itemize}
@@ -153,7 +151,7 @@ The previous team's infrastructure provided a solid foundation but required sign
 
 \item \textbf{Status}: Enhanced
 
-\item \textbf{Problem}: Manual setup of the eBPF compilation environment was required before each test, including extracting \texttt{vmlinux.h} from kernel BTF data, loading kernel modules, enabling BPF JIT, and creating necessary directories.
+\item \textbf{Problem}: Manual setup of the eBPF compilation environment was required before each test, including extracting \texttt{vmlinux.h} from kernel BTF data, loading kernel modules, and creating necessary directories.
 
 \item \textbf{Solution}: Automated the entire setup process by adding initialization commands to cloud-init configuration (executed during VM provisioning) and embedding setup logic in the test session script (executed when starting a test). Both approaches extract \texttt{vmlinux.h}, load required modules, and configure kernel parameters automatically.
 

@@ -18,8 +18,10 @@ The vulnerability is introduced via a Git patch located at:
 \texttt{mutilated.patch}
 \end{small}
 
+\noindent
 Applied to \texttt{xdp\_synproxy\_kern.c}. This patch demonstrates unsafe use of a tainted packet field (TCP Data Offset) as a loop counter controlling a memory copy operation.
 
+\noindent
 The vulnerability is a classic stack buffer overflow:
 
 \vspace{0.3cm}
@@ -41,8 +43,10 @@ The vulnerability is a classic stack buffer overflow:
 }
 \vspace{0.3cm}
 
+\noindent
 \subsection{Why the Verifier Fails}
 
+\noindent
 The verifier performs bounds checking to ensure accesses are within bounds. Typically:
 
 \vspace{0.3cm}
@@ -58,6 +62,7 @@ The verifier performs bounds checking to ensure accesses are within bounds. Typi
 }
 \vspace{0.3cm}
 
+\noindent
 However, if the bounds check is on a \textit{tainted} value (one derived from the packet), and the verifier's taint tracking is incomplete, it may:
 \begin{enumerate}[label=\arabic*.]
   \item Assume the check is valid without verifying it actually constrains the taint source
@@ -67,6 +72,7 @@ However, if the bounds check is on a \textit{tainted} value (one derived from th
 
 \subsection{Attack Scenario}
 
+\noindent
 \begin{enumerate}[label=\arabic*.]
   \item Attacker sends a TCP packet with \texttt{payload\_len = 256}
   \item The verifier ``checks'' that \texttt{payload\_len} $\leq$ 256 (always true)
@@ -78,6 +84,7 @@ However, if the bounds check is on a \textit{tainted} value (one derived from th
 
 \subsection{Bytecode Level with Concrete Example}
 
+\noindent
 Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}:
 
 \vspace{0.3cm}
@@ -99,6 +106,7 @@ Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}:
 
 \subsection{Packet Construction: Crafting the Overflow}
 
+\noindent
 To trigger the vulnerability, the attacker must construct a TCP packet where:
 
 \begin{enumerate}[label=\arabic*.]
@@ -109,6 +117,7 @@ To trigger the vulnerability, the attacker must construct a TCP packet where:
 
 \subsection{Verifier's Taint Analysis Failure}
 
+\noindent
 The verifier's taint analysis fails because:
 
 \begin{enumerate}[label=\arabic*.]
@@ -118,8 +127,10 @@ The verifier's taint analysis fails because:
   \item The verifier conflates packet-level bounds with structure-level bounds
 \end{enumerate}
 
+\noindent
 Result: The verifier accepts a bounds check that is sufficient for packet memory safety but insufficient for structure-field safety. Detailed verifier analysis is available in the evidence logs.
 
+\noindent
 \textbf{Impact:} Overwrites the next 54 bytes in the packet buffer, potentially corrupting subsequent packet header fields or other eBPF map data.
 
 \vspace{0.3cm}
@@ -136,10 +147,12 @@ Result: The verifier accepts a bounds check that is sufficient for packet memory
 }
 \vspace{0.3cm}
 
+\noindent
 The critical observation: The bytecode contains unrolled stores from offset 0 to offset 59 (0x3b), but the actual \texttt{h\_dest} buffer is only 6 bytes (MAC address size). The verifier's bounds check confirms the packet has at least 60 bytes, but this does not constrain writes to the 6-byte structure field. Detailed bytecode analysis is available in the evidence logs.
 
 \subsection{Verifier's Taint Analysis Failure}
 
+\noindent
 The verifier needs to:
 \begin{enumerate}[label=\arabic*.]
   \item Mark the payload length as tainted (from packet)
@@ -148,10 +161,12 @@ The verifier needs to:
   \item Verify that the bounds check is sufficient (check against the actual buffer size)
 \end{enumerate}
 
+\noindent
 If the verifier accepts a bounds check that is not tight, tainted values can escape and cause OOB writes.
 
 \section{Runtime Behavior and Evidence}
 
+\noindent
 \subsection{Triggering the Vulnerability}
 
 \vspace{0.3cm}
@@ -166,11 +181,13 @@ If the verifier accepts a bounds check that is not tight, tainted values can esc
 }
 \vspace{0.3cm}
 
-This sends a packet with a TCP Data Offset field set to trigger a 60-byte copy into the 6-byte buffer
+\noindent
+This sends a packet with a TCP Data Offset field set to trigger a 60-byte copy into the 6-byte buffer.
 This sends a packet with a crafted payload length of 256 bytes to trigger the overflow.
 
 \subsection{Observable Effects}
 
+\noindent
 Kernel trace output:
 
 \vspace{0.3cm}
@@ -191,14 +208,17 @@ Kernel trace output:
 
 \subsection{Memory Impact}
 
+\noindent
 The overflow region (6-59 bytes past buffer start) may contain saved return addresses (if stack layout aligns), other local variables, saved registers (x86-64 calling convention), or saved frame pointers (RBP).
 
 \section{Classification: EXPLOITABLE (CRITICAL)}
 
+\noindent
 The verifier accepts the program, the bytecode contains the overflow, runtime executes the overflow, the attacker controls overflow data (packet payload) and overflow length (payload\_len field), enabling direct writes to the kernel stack with attacker-controlled data. \textbf{This is a confirmed, directly exploitable memory-corruption vulnerability}.
 
 \section{Exploitation Path to Privilege Escalation}
 
+\noindent
 \subsection{Stage 1: Overflow Return Address}
 
 If the stack layout places a return address within the overflow region:
@@ -229,6 +249,7 @@ If code execution is achieved in the XDP context:
 
 \section{Constraints and Realities}
 
+\noindent
 \begin{itemize}
   \item \textbf{Reliability}: Stack values are predictable in kernel context
   \item \textbf{Return address location}: Depends on XDP processing context; may require guessing or information disclosure
@@ -237,6 +258,7 @@ If code execution is achieved in the XDP context:
 
 \section{Proof-of-Concept}
 
+\noindent
 Complete PoC in \texttt{poc\_546b\_final.py}:
 
 \vspace{0.3cm}

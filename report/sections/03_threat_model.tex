@@ -31,7 +31,7 @@ The primary objective is to exploit eBPF verifier logic bugs to transition from 
 
 \section{Scope and Constraints}
 
-This assessment focuses exclusively on XDP hook point vulnerabilities in the Linux eBPF verifier version included in kernel LTS 6.8. The vulnerabilities studied are triggered through network packet injection and do not require local code execution. The test environment isolates the target system (VM) and exploit source (host machine) to create a controlled but realistic external-attack scenario. The evidence chain methodology documents how each vulnerability progresses from bytecode through verifier through JIT to runtime impact, enabling independent reproduction and verification.
+...nt focuses exclusively on XDP hook point vulnerabilities in the Linux eBPF verifier version included in kernel LTS 6.8. The vulnerabilities studied are triggered through network packet injection and do not require local code execution. The test environment isolates the target system (VM) and exploit source (host machine) to create a controlled but realistic external-attack scenario. The evidence chain methodology documents how each vulnerability progresses from bytecode through verifier to runtime impact, enabling independent reproduction and verification.
 
 \subsection{Out of Scope}
 

@@ -40,12 +40,6 @@ Exploitation of 5.39 and 5.46b depends on knowledge of the kernel's stack frame 
 
 \textbf{Practical impact}: In a real exploit, stack layout is often determined via information disclosure or trial-and-error. The PoCs demonstrate the vulnerability exists, not a complete end-to-end exploit.
 
-\subsection{JIT Disassembly Unavailable on Some Platforms}
-
-The optional JIT inspection step requires x86-64 architecture (ARM64 and RISC-V support exists but may differ), readable JIT output enabled in kernel config, and access to \texttt{/proc/sys/net/core/bpf\_jit\_kallsyms}.Without JIT output, verification can only proceed through bytecode and xlated dumps. The vulnerability is still confirmed, but the full execution path is not visible.
-
-\textbf{Mitigation}: Xlated output is sufficient to prove the vulnerability survives verification and reaches runtime.
-
 \section{Methodology Limitations}
 
 \subsection{No Formal Verification of Exploitability}

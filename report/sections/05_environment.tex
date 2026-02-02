@@ -32,54 +32,88 @@ The key innovation is the \textbf{external-perspective exploitation}: rather tha
 
 The eBPF compilation process begins with clang targeting the eBPF instruction set. The standard invocation is:
 
-\begin{verbatim}
-clang -O2 -target bpf -c xdp_synproxy_kern.c -o xdp_synproxy_kern.o
-\end{verbatim}
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+    {\small\ttfamily
+    clang -O2 -target bpf -c xdp\_synproxy\_kern.c -o xdp\_synproxy\_kern.o
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
 
+\noindent
 The \textbf{-O2} optimization level is critical because \texttt{-O0} may preserve temporary variables and memory operations that the optimizer would normally eliminate. The \textbf{-target bpf} flag directs compilation to the eBPF instruction set rather than the native host architecture (x86-64, ARM, etc.). The \textbf{-c} flag produces an object file without linking, since eBPF programs are self-contained units without external symbol dependencies.
 
 \subsection{Bytecode Inspection with llvm-objdump}
 
 After compilation, we inspect the bytecode to confirm the vulnerable code path is present and was not optimized away:
 
-\begin{verbatim}
-llvm-objdump -d xdp_synproxy_kern.o | grep -A 50 "tcp_dissect"
-\end{verbatim}
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+    {\small\ttfamily
+    llvm-objdump -d xdp\_synproxy\_kern.o | grep -A 50 "tcp\_dissect"
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
 
+\noindent
 This inspection reveals the full instruction sequence in the vulnerable function, register usage patterns, memory access operations (loads and stores), and bounds checks or arithmetic that might be relevant to the vulnerability. This step is essential to prove that the compiler did not inadvertently eliminate the vulnerability through dead-code elimination or aggressive optimization.
 
 \section{Kernel Tools and eBPF Loading}
 
 The bpftool utility is the primary interface for interacting with loaded eBPF programs. To load a compiled eBPF object file and capture verifier diagnostics, we use:
 
-\begin{verbatim}
-bpftool prog load xdp_synproxy_kern.o /sys/fs/bpf/my_prog \
-  type xdp verbose 2>&1 | tee verifier.log
-\end{verbatim}
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+    {\small\ttfamily
+    bpftool prog load xdp\_synproxy\_kern.o /sys/fs/bpf/my\_prog \\
+    \ \ type xdp verbose 2>\&1 | tee verifier.log
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
 
+\noindent
 The \texttt{verbose} flag is essential; it causes the kernel to output the verifier's complete internal reasoning, including the register types and ranges tracked at each instruction, the constraints on memory offsets, and the specific reasoning for any rejection. These logs are piped to a file for post-analysis and evidence documentation.
 
 After successful loading, attaching the program to a network interface is straightforward:
 
-\begin{verbatim}
-ip link set dev enp2s0 xdp obj xdp_synproxy_kern.o sec .text
-\end{verbatim}
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+    {\small\ttfamily
+    ip link set dev enp2s0 xdp obj xdp\_synproxy\_kern.o sec .text
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
 
+\noindent
 Packets arriving on \texttt{enp2s0} are now processed by the eBPF program at the driver level, before entering the kernel's normal networking stack. This is the execution point where vulnerabilities manifest.
 
 Post-verification, the kernel performs internal bytecode transformations and optimizations. These can be inspected via the \textit{xlated} dump:
 
-\begin{verbatim}
-bpftool prog dump xlated name my_prog > xlated.dump
-\end{verbatim}
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+    {\small\ttfamily
+    bpftool prog dump xlated name my\_prog > xlated.dump
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
 
-The xlated dump shows the bytecode as it exists in kernel memory after the verifier has processed it. This proves whether the vulnerability survived verification intact or was transformed/sanitized. On x86-64 architectures with JIT compilation enabled, the native instructions can be inspected via:
-
-\begin{verbatim}
-bpftool prog dump jited name my_prog > jited.dump
-\end{verbatim}
-
-This reveals the actual x86 assembly instructions executed at runtime, completing the evidence chain from high-level C code through bytecode, through verifier, through JIT, to final machine instructions.
+\noindent
+The xlated dump shows the bytecode as it exists in kernel memory after the verifier has processed it. This proves whether the vulnerability survived verification intact or was transformed/sanitized. Runtime traces and kernel output confirm execution and behavior.
 
 \section{Runtime Observation and Debugging}
 
@@ -87,18 +121,34 @@ This reveals the actual x86 assembly instructions executed at runtime, completin
 
 eBPF debug output uses the \texttt{bpf\_printk} macro, which writes messages to the kernel trace buffer. These can be observed in real-time via:
 
-\begin{verbatim}
-cat /sys/kernel/debug/tracing/trace_pipe
-\end{verbatim}
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+    {\small\ttfamily
+    cat /sys/kernel/debug/tracing/trace\_pipe
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
 
+\noindent
 During PoC execution, trace output confirms that specific code paths are executing and vulnerabilities are being triggered. Example output from vulnerability testing:
 
-\begin{verbatim}
-[argcomp]: 5.6a - csum
-[taintnoproto]: 5.39 - OOB index: 18
-[taintsink]: 5.46b - Copy length: 256
-\end{verbatim}
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+    {\small\ttfamily
+    \texttt{[argcomp]: 5.6a - csum}\\
+    \texttt{[taintnoproto]: 5.39 - OOB index: 18}\\
+    \texttt{[taintsink]: 5.46b - Copy length: 256}
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
 
+\noindent
 Each line corresponds to a vulnerability test; the messages confirm that the vulnerable code executed and reached the instrumentation point. This provides immediate feedback during exploitation attempts.
 
 \section{Proof-of-Concept Development}
@@ -107,25 +157,41 @@ Each line corresponds to a vulnerability test; the messages confirm that the vul
 
 Most PoCs use Python with the Scapy library for high-level packet construction. A typical exploit:
 
-\begin{verbatim}
-from scapy.all import IP, TCP, send
-pkt = IP(dst=target_ip) / TCP(dport=80, flags="S", seq=exploit_seq)
-send(pkt, verbose=False)
-\end{verbatim}
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+    {\small\ttfamily
+    from scapy.all import IP, TCP, send\\
+    pkt = IP(dst=target\_ip) / TCP(dport=80, flags="S", seq=exploit\_seq)\\
+    send(pkt, verbose=False)
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
 
+\noindent
 This approach offers simplicity and readability: the packet structure is obvious from the Python code, headers are automatically generated, checksums are computed automatically, and parameters can be easily varied for different attack scenarios. The primary limitation is that the kernel's network stack may perform checksum offloading or other transformations that prevent precise low-level manipulation. For simple network-based vulnerabilities, this is sufficient.
 
 \subsection{Raw Sockets for Low-Level Control}
 
 For cases requiring precise control over checksums and headers, raw socket code in C/Python is used:
 
-\begin{verbatim}
-sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_TCP)
-sock.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
-# Construct packet bytes and send
-sock.sendto(packet_bytes, (target_ip, 0))
-\end{verbatim}
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+    {\small\ttfamily
+    sock = socket.socket(socket.AF\_INET, socket.SOCK\_RAW, socket.IPPROTO\_TCP)\\
+    sock.setsockopt(socket.IPPROTO\_IP, socket.IP\_HDRINCL, 1)\\
+    \# Construct packet bytes and send\\
+    sock.sendto(packet\_bytes, (target\_ip, 0))
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
 
+\noindent
 This allows:
 \begin{itemize}
   \item Direct control over every field (including malformed checksums)
@@ -157,15 +223,22 @@ This setup allows monitoring program load status, server state, and kernel debug
 
 All dependencies are pre-installed in the provisioned VM. On a fresh Ubuntu 24.04 system, install:
 
-\begin{verbatim}
-apt-get update
-apt-get install -y \
-  clang llvm llvm-tools \
-  bpf-tools \
-  linux-headers-6.8 \
-  netcat-openbsd tcpdump iproute2 \
-  tmux git make python3-scapy
-\end{verbatim}
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+    {\small\ttfamily
+    apt-get update\\
+    apt-get install -y \\
+    \ \ clang llvm llvm-tools \\
+    \ \ bpf-tools \\
+    \ \ linux-headers-6.8 \\
+    \ \ netcat-openbsd tcpdump iproute2 \\
+    \ \ tmux git make python3-scapy
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
 \section{Kernel and Target}
 \begin{itemize}
   \item Linux Kernel LTS 6.8

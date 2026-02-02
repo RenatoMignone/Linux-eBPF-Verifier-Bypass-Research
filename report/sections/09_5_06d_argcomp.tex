@@ -17,6 +17,7 @@ A function is declared and called with mismatched argument types. The vulnerabil
 \texttt{0001-feat-5.06d-wrong-argument-types.patch}
 \end{small}
 
+\noindent
 Applied to \texttt{xdp\_synproxy\_kern.c}:
 
 \vspace{0.3cm}
@@ -35,8 +36,10 @@ Applied to \texttt{xdp\_synproxy\_kern.c}:
 }
 \vspace{0.3cm}
 
+\noindent
 \subsection{Bytecode-Level Evidence}
 
+\noindent
 Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}, the compiled bytecode shows:
 
 \vspace{0.3cm}
@@ -54,10 +57,12 @@ Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}, the compiled bytecode show
 }
 \vspace{0.3cm}
 
+\noindent
 The sequence shows: (1) load 16-bit TCP window field from r7 + 14 into r1, (2) convert from big-endian to native endian (be16), (3) call helper function with r1 as argument. Critically, only the lower 16 bits of r1 are initialized from the packet. The upper 48 bits are uninitialized, and the function signature expects a \texttt{long} (64-bit). The compiler does not zero-extend or sign-extend the value.
 
 \subsection{Verification Evidence: Xlated Dump}
 
+\noindent
 The \texttt{xlated} dump (verifier-processed bytecode) confirms the type mismatch survives verification:
 
 \vspace{0.3cm}
@@ -85,6 +90,7 @@ The verifier-processed bytecode still includes the mismatched call path, showing
 
 \subsection{Verifier Acceptance}
 
+\noindent
 The verifier:
 \begin{enumerate}[label=\arabic*.]
   \item Sees a function call
@@ -95,6 +101,7 @@ The verifier:
 
 \section{Runtime Behavior}
 
+\noindent
 \subsection{Triggering the Vulnerability}
 
 \vspace{0.3cm}
@@ -110,6 +117,7 @@ The verifier:
 
 \subsection{Observable Effects}
 
+\noindent
 Kernel trace output:
 
 \vspace{0.3cm}
@@ -129,10 +137,12 @@ In the current proof-of-concept, the computed 32-bit value is used for arithmeti
 
 \section{Classification: Limited/Exploitable}
 
+\noindent
 This is classified as \textbf{Limited to Exploitable}: the verifier accepts the type mismatch, the bytecode preserves uninitialized upper bits, and control flow depends on the garbage values. Runtime executes with a contaminated value that could cause memory corruption if used for pointer arithmetic or bounds checking, though the current proof-of-concept does not trigger full corruption.
 
 \section{Real-World Escalation}
 
+\noindent
 If the mismatched value influences:
 \begin{enumerate}[label=\arabic*.]
   \item Pointer arithmetic: A small value becomes a huge 64-bit address $\rightarrow$ kernel memory write
@@ -142,6 +152,7 @@ If the mismatched value influences:
 
 \section{PoC Code}
 
+\noindent
 \texttt{src/exploits/5\_06d\_argcomp/poc\_506d\_final.py} sends packets triggering the mismatched function call.
 
 \textbf{Artifact Logs:}

@@ -18,8 +18,10 @@ The vulnerability is introduced via a Git patch located at:
 \texttt{mutilated.patch}
 \end{small}
 
+\noindent
 Applied to \texttt{xdp\_synproxy\_kern.c}. This patch adds an unprototyped function pointer and tainted array access within a TCP sequence number-derived index.
 
+\noindent
 The vulnerability combines:
 \begin{enumerate}[label=\arabic*.]
   \item An unprototyped function pointer call (verifier cannot validate its behavior)
@@ -27,6 +29,7 @@ The vulnerability combines:
   \item A fixed-size stack array accessed with the sequence number as index
 \end{enumerate}
 
+\noindent
 Simplified pseudocode:
 
 \vspace{0.3cm}
@@ -56,12 +59,15 @@ Simplified pseudocode:
 }
 \vspace{0.3cm}
 
+\noindent
 \subsection{Why This Is Dangerous}
 
+\noindent
 The TCP sequence number is a 32-bit value controlled by the attacker (the remote client sending the SYN packet). If the verifier cannot validate the bounds of \texttt{idx}, then index values such as 16 access \texttt{stack\_array[16]} out-of-bounds, while values such as 25 write 50 bytes beyond the array into adjacent stack memory containing return addresses, saved registers, and other local variables.
 
 \subsection{Bytecode Level with Concrete Example}
 
+\noindent
 Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}:
 
 \vspace{0.3cm}
@@ -84,12 +90,15 @@ Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}:
 }
 \vspace{0.3cm}
 
+\noindent
 The snippet shows the tainted input flow from the TCP sequence number into the indirect call site: byte-order conversion (\texttt{be16}), division by 1000, and then two printks (\texttt{index} and \texttt{Content}). This proves the compiler preserved the unsafe data flow. Detailed bytecode analysis is available in the evidence logs.
 
 \subsection{Packet Construction: Triggering Out-of-Bounds Indices}
 
+\noindent
 To trigger the vulnerability, we must craft TCP packets where the sequence number, after conversion and division, yields index values $\geq 16$.
 
+\noindent
 \textbf{Challenge:} The code performs:
 \begin{enumerate}[label=\arabic*.]
   \item \texttt{bpf\_htons(seq)} — byte-order swap
@@ -97,12 +106,15 @@ To trigger the vulnerability, we must craft TCP packets where the sequence numbe
   \item Implicit cast to array index (lower bits)
 \end{enumerate}
 
+\noindent
 \textbf{Solution:} To target index 16, we need \texttt{(bpf\_htons(seq) / 1000) \& 0xFFFF = 16}, which yields \texttt{seq = 16000} in network byte order. This requires carefully positioning the desired value in the lower 16 bits after byte-order conversion.
 
+\noindent
 \textbf{Example Payload:} The PoC constructs packets with TCP sequence numbers set to values like \texttt{0x3E80...} (representing 16000 after processing) to reliably trigger out-of-bounds array accesses.
 
 \subsection{Verifier Taint Tracking Failure}
 
+\noindent
 The verifier should:
 \begin{enumerate}[label=\arabic*.]
   \item Recognize that \texttt{seq\_num} is tainted (user-controlled)
@@ -110,6 +122,7 @@ The verifier should:
   \item Reject the program if tainted value is used as an index without validation
 \end{enumerate}
 
+\noindent
 However:
 \begin{enumerate}[label=\arabic*.]
   \item The unprototyped function pointer call breaks the verifier's taint tracking
@@ -122,8 +135,10 @@ Detailed verifier analysis is available in the evidence logs.
 
 \section{Runtime Behavior and Evidence}
 
+\noindent
 \subsection{Triggering the Vulnerability}
 
+\noindent
 On the host, run the PoC:
 
 \vspace{0.3cm}
@@ -138,6 +153,7 @@ On the host, run the PoC:
 }
 \vspace{0.3cm}
 
+\noindent
 This sends SYN packets with crafted sequence numbers (16, 17, 18, 25) to trigger OOB indices.
 
 \subsection{Observable Effects}
@@ -165,10 +181,12 @@ In the kernel trace (\texttt{trace\_pipe}):
 
 \subsection{Memory Impact}
 
+\noindent
 Each write to \texttt{stack\_array[idx]} where \texttt{idx > 16} writes to kernel stack memory immediately adjacent to the array. Depending on stack layout, an index of 16 overwrites 32 bytes beyond the array end, while an index of 25 overwrites 50 bytes, potentially corrupting saved registers, other local variables, or return addresses depending on the memory layout.
 
 \section{Classification: EXPLOITABLE}
 
+\noindent
 \begin{itemize}
   \item \checkmark Verifier accepts the program
   \item \checkmark Bytecode preserves the tainted index and array access
@@ -182,6 +200,7 @@ Each write to \texttt{stack\_array[idx]} where \texttt{idx > 16} writes to kerne
 
 \section{Exploitation Potential}
 
+\noindent
 \subsection{Immediate Threats}
 
 \begin{enumerate}[label=\arabic*.]

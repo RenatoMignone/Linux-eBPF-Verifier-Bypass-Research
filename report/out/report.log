@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.1.15)  2 FEB 2026 15:17
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.1.15)  2 FEB 2026 15:53
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -678,11 +678,7 @@ File: l3backend-pdftex.def 2024-01-04 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count319
 \l__pdf_internal_box=\box72
 )
-(out/report.aux
-
-LaTeX Warning: Label `ch:conclusion' multiply defined.
-
-)
+(out/report.aux)
 \openout1 = `report.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 38.
@@ -767,7 +763,7 @@ File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
 \c@lstlisting=\count326
-<resources/images/polito_logo.png, id=843, 126.801pt x 115.632pt>
+<resources/images/polito_logo.png, id=839, 126.801pt x 115.632pt>
 File: resources/images/polito_logo.png Graphic file (type png)
 <use resources/images/polito_logo.png>
 Package pdftex.def Info: resources/images/polito_logo.png  used on input line 4
@@ -850,7 +846,7 @@ LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 5
 (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-<resources/images/ebpf_architecture.jpg, id=1106, 1027.84pt x 561.09625pt>
+<resources/images/ebpf_architecture.jpg, id=1101, 1027.84pt x 561.09625pt>
 File: resources/images/ebpf_architecture.jpg Graphic file (type jpg)
 <use resources/images/ebpf_architecture.jpg>
 Package pdftex.def Info: resources/images/ebpf_architecture.jpg  used on input 
@@ -867,7 +863,7 @@ plex\T1/lmr/m/n/10.95 , com-pris-ing ap-prox-i-mately 20,000 lines in \T1/lmr/b
 x/n/10.95 ker-nel/bpf/ver-
  []
 
-<resources/images/xdp_stack_comparison.jpg, id=1113, 1027.84pt x 561.09625pt>
+<resources/images/xdp_stack_comparison.jpg, id=1108, 1027.84pt x 561.09625pt>
 File: resources/images/xdp_stack_comparison.jpg Graphic file (type jpg)
 <use resources/images/xdp_stack_comparison.jpg>
 Package pdftex.def Info: resources/images/xdp_stack_comparison.jpg  used on inp
@@ -877,7 +873,7 @@ ut line 39.
 LaTeX Warning: `h' float specifier changed to `ht'.
 
 [9 <./resources/images/ebpf_architecture.jpg>]
-<resources/images/syn_proxy_flow.jpg, id=1119, 1027.84pt x 561.09625pt>
+<resources/images/syn_proxy_flow.jpg, id=1114, 1027.84pt x 561.09625pt>
 File: resources/images/syn_proxy_flow.jpg Graphic file (type jpg)
 <use resources/images/syn_proxy_flow.jpg>
 Package pdftex.def Info: resources/images/syn_proxy_flow.jpg  used on input lin
@@ -900,35 +896,35 @@ n.c
  []
 
 [13]
-<resources/images/patch_lifecycle.jpg, id=1150, 1027.84pt x 561.09625pt>
+<resources/images/patch_lifecycle.jpg, id=1145, 1027.84pt x 561.09625pt>
 File: resources/images/patch_lifecycle.jpg Graphic file (type jpg)
 <use resources/images/patch_lifecycle.jpg>
 Package pdftex.def Info: resources/images/patch_lifecycle.jpg  used on input li
-ne 31.
+ne 29.
 (pdftex.def)             Requested size: 339.72592pt x 185.45343pt.
  [14 <./resources/images/patch_lifecycle.jpg>] [15] [16]
-Overfull \hbox (13.91042pt too wide) in paragraph at lines 120--121
+Overfull \hbox (13.91042pt too wide) in paragraph at lines 118--119
 []\T1/lmr/bx/n/10.95 Problem\T1/lmr/m/n/10.95 : Run-ning \T1/lmtt/m/n/10.95 vmc
 tl.sh create \T1/lmr/m/n/10.95 failed be-cause the vir-tu-al-iza-tion tools (\T
 1/lmtt/m/n/10.95 virt-install\T1/lmr/m/n/10.95 ,
  []
 
 
-Overfull \hbox (21.60542pt too wide) in paragraph at lines 122--123
+Overfull \hbox (21.60542pt too wide) in paragraph at lines 120--121
 []\T1/lmr/bx/n/10.95 Solution\T1/lmr/m/n/10.95 : In-stalled the re-quired vir-t
 u-al-iza-tion pack-ages: \T1/lmtt/m/n/10.95 virtinst\T1/lmr/m/n/10.95 , \T1/lmt
 t/m/n/10.95 libvirt-daemon-system\T1/lmr/m/n/10.95 ,
  []
 
 [17]
-Overfull \hbox (15.04892pt too wide) in paragraph at lines 175--176
+Overfull \hbox (15.04892pt too wide) in paragraph at lines 173--174
 []\T1/lmr/bx/n/10.95 Problem\T1/lmr/m/n/10.95 : The in-her-ited code-base used 
 in-con-sis-tent path ref-er-ences rel-a-tive to the \T1/lmtt/m/n/10.95 codebase
 /
  []
 
 ) (./sections/05_environment.tex [18]
-<resources/images/VM_Structure.jpg, id=1177, 1027.84pt x 561.09625pt>
+<resources/images/VM_Structure.jpg, id=1171, 1027.84pt x 561.09625pt>
 File: resources/images/VM_Structure.jpg Graphic file (type jpg)
 <use resources/images/VM_Structure.jpg>
 Package pdftex.def Info: resources/images/VM_Structure.jpg  used on input line 
@@ -960,19 +956,19 @@ Underfull \hbox (badness 10000) in paragraph at lines 42--42
 
  []
 
-[27]
-Overfull \hbox (40.0425pt too wide) in paragraph at lines 74--76
+
+Overfull \hbox (40.0425pt too wide) in paragraph at lines 75--77
 \T1/lmr/m/n/10.95 Full byte-code dump avail-able in \T1/lmtt/m/n/10.95 src/expl
 oits/5_06a_argcomp/logs/5_06a_bytecode_analysis.txt\T1/lmr/m/n/10.95 . 
  []
 
-[28]) (./sections/08_5_06b_argcomp.tex [29]
-Underfull \hbox (badness 10000) in paragraph at lines 34--34
+[27] [28]) (./sections/08_5_06b_argcomp.tex [29]
+Underfull \hbox (badness 10000) in paragraph at lines 35--35
 
  []
 
 [30] [31]) (./sections/09_5_06d_argcomp.tex
-Underfull \hbox (badness 10000) in paragraph at lines 35--35
+Underfull \hbox (badness 10000) in paragraph at lines 36--36
 
  []
 
@@ -988,81 +984,81 @@ Overfull \hbox (44.49931pt too wide) in paragraph at lines 1--1
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 56--56
+Underfull \hbox (badness 10000) in paragraph at lines 59--59
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 56--56
+Underfull \hbox (badness 10000) in paragraph at lines 59--59
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 56--56
+Underfull \hbox (badness 10000) in paragraph at lines 59--59
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 56--56
+Underfull \hbox (badness 10000) in paragraph at lines 59--59
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 56--56
+Underfull \hbox (badness 10000) in paragraph at lines 59--59
 
  []
 
 [35]
-Underfull \hbox (badness 10000) in paragraph at lines 84--84
+Underfull \hbox (badness 10000) in paragraph at lines 90--90
 
  []
 
 [36{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}]
-Underfull \hbox (badness 10000) in paragraph at lines 138--138
+Underfull \hbox (badness 10000) in paragraph at lines 153--153
 
  []
 
-[37] [38]) (./sections/11_5_46b_taintsink.tex [39]
-Underfull \hbox (badness 10000) in paragraph at lines 41--41
+[37] [38]
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+) (./sections/11_5_46b_taintsink.tex [39]
+Underfull \hbox (badness 10000) in paragraph at lines 43--43
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 41--41
+Underfull \hbox (badness 10000) in paragraph at lines 43--43
 
  []
 
-[40] [41] [42] [43]) (./sections/12_results_discussion.tex [44] [45{/usr/share/
-texmf/fonts/enc/dvips/lm/lm-mathit.enc}] [46]
+[40] [41] [42] [43] [44]) (./sections/12_results_discussion.tex [45] [46{/usr/s
+hare/texmf/fonts/enc/dvips/lm/lm-mathit.enc}]
 Overfull \hbox (50.24185pt too wide) in paragraph at lines 133--158
  [][] 
  []
 
-) (./sections/13_limitations.tex [47]
-Overfull \hbox (161.96362pt too wide) in paragraph at lines 45--46
-\T1/lmr/m/n/10.95 ists but may dif-fer), read-able JIT out-put en-abled in ker-
-nel con-fig, and ac-cess to \T1/lmtt/m/n/10.95 /proc/sys/net/core/bpf_jit_kalls
-yms\T1/lmr/m/n/10.95 .Without
- []
 
-[48] [49]
-Overfull \hbox (4.03825pt too wide) in paragraph at lines 126--137
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+) (./sections/13_limitations.tex [47] [48] [49]
+Overfull \hbox (4.03825pt too wide) in paragraph at lines 120--131
  [][] 
  []
 
-) (./sections/14_conclusion.tex [50] [51]
-Overfull \hbox (9.91405pt too wide) in paragraph at lines 59--70
+[50]) (./sections/14_conclusion.tex [51]
+Overfull \hbox (9.91405pt too wide) in paragraph at lines 58--69
  [][] 
  []
 
 [52]
-Overfull \hbox (32.69432pt too wide) in paragraph at lines 145--146
+Overfull \hbox (32.69432pt too wide) in paragraph at lines 144--145
 []\T1/lmr/m/n/10.95 Disable eBPF en-tirely on sys-tems that don't re-quire it (
 \T1/lmtt/m/n/10.95 kernel.unprivileged_bpf_disabled=1\T1/lmr/m/n/10.95 ) 
  []
 
 [53] [54] [55]
-Overfull \hbox (1.47154pt too wide) in paragraph at lines 276--277
+Overfull \hbox (1.47154pt too wide) in paragraph at lines 275--276
 []\T1/lmr/m/n/10.95 For re-pro-duc-tion in-struc-tions and en-vi-ron-ment setup
 , see the main \T1/lmtt/m/n/10.95 README.md \T1/lmr/m/n/10.95 and \T1/lmtt/m/n/
 10.95 Makefile\T1/lmr/m/n/10.95 . 
@@ -1075,19 +1071,19 @@ L3 programming layer <2024-01-22>
  ***********
 
 
-LaTeX Warning: There were multiply-defined labels.
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
 Package rerunfilecheck Info: File `report.out' has not changed.
-(rerunfilecheck)             Checksum: 1C189E7FC7EB569A4FF304E4A612273A;41452.
+(rerunfilecheck)             Checksum: 02D67D63113371D091B02D5FF17640FB;41147.
  ) 
 Here is how much of TeX's memory you used:
- 23270 strings out of 476106
- 421772 string characters out of 5793933
+ 23267 strings out of 476106
+ 421728 string characters out of 5793933
  1944975 words of memory out of 5000000
- 44357 multiletter control sequences out of 15000+600000
+ 44356 multiletter control sequences out of 15000+600000
  625371 words of font info for 87 fonts, out of 8000000 for 9000
  59 hyphenation exceptions out of 8191
- 83i,10n,87p,1322b,643s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 83i,10n,87p,1322b,582s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texmf/fonts/type1/public/lm/lmbx10.pfb></usr/share/texmf/fonts/ty
 pe1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi10.pfb></u
 sr/share/texmf/fonts/type1/public/lm/lmr10.pfb></usr/share/texmf/fonts/type1/pu
@@ -1095,10 +1091,10 @@ blic/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr17.pfb></usr/share
 /texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm
 /lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt10.pfb></usr/share/texl
 ive/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb>
-Output written on out/report.pdf (57 pages, 760791 bytes).
+Output written on out/report.pdf (57 pages, 760426 bytes).
 PDF statistics:
- 1704 PDF objects out of 1728 (max. 8388607)
- 1600 compressed objects within 16 object streams
- 490 named destinations out of 1000 (max. 500000)
- 1707 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 1698 PDF objects out of 1728 (max. 8388607)
+ 1594 compressed objects within 16 object streams
+ 488 named destinations out of 1000 (max. 500000)
+ 1699 words of extra memory for PDF output out of 10000 (max. 10000000)
 
