@@ -34,7 +34,7 @@ Vulnerabilities 5.39 (\textbf{stack OOB write}) and 5.46b (\textbf{stack buffer 
   \item \textbf{Confirmed to pass the verifier}
   \item \textbf{Confirmed to compile} to bytecode that preserves the vulnerability
   \item \textbf{Confirmed to execute} at runtime with observable \textbf{memory corruption}
-  \item \textbf{Feasible to exploit} for privilege escalation with additional effort
+  \item \textbf{Proven memory write primitives}; full exploitation would require kernel-specific adaptation
 \end{itemize}
 
 \subsection{Evidence Chain Validation}
@@ -59,8 +59,8 @@ This chain validates that the vulnerabilities are real, not artifacts of analysi
 \hline
 \textbf{ID} & \textbf{Type} & \textbf{Impact} & \textbf{Severity} \\
 \hline
-5.46b & Buffer Overflow & Privilege escalation to root & CRITICAL \\
-5.39 & Stack OOB Write & Memory corruption, potential code execution & HIGH \\
+5.46b & Buffer Overflow & Kernel memory write primitive (out-of-bounds write) & HIGH \\
+5.39 & Stack OOB Write & Kernel memory write primitive (stack corruption) & HIGH \\
 5.06d & Type Mismatch & Runtime trigger, potential exploitable in context & MEDIUM \\
 5.06b & Arg Count Mismatch & Runtime trigger, limited direct impact & MEDIUM \\
 5.06a & Type Mismatch & Runtime trigger, limited direct impact & MEDIUM \\
