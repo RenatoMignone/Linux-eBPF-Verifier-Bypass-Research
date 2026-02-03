@@ -10,7 +10,7 @@ This report has documented a comprehensive, practical investigation of eBPF veri
   \item \textbf{Reproducible methodology}: A systematic, multi-stage approach to validating eBPF vulnerabilities
   \item \textbf{Functional PoCs}: Working exploits demonstrating vulnerabilities in a production kernel
   \item \textbf{Evidence artifacts}: Bytecode, verifier logs, xlated dumps, and runtime traces for each vulnerability
-  \item \textbf{Clear distinction}: Between runtime triggers (ABI mismatches) and true memory corruption primitives
+  \item \textbf{Clear distinction}: Between runtime triggers (ABI (Application Binary Interface) mismatches) and true memory corruption primitives
 \end{enumerate}
 
 \section{Key Findings}
@@ -19,7 +19,7 @@ This report has documented a comprehensive, practical investigation of eBPF veri
 
 The \textbf{eBPF verifier does not enforce}:
 \begin{itemize}
-  \item \textbf{ABI compliance} for function pointers (all architectures)
+  \item \textbf{ABI (Application Binary Interface) compliance} for function pointers (all architectures)
   \item \textbf{Argument type and count matching} in function calls
   \item \textbf{Tight bounds checking} on tainted (user-controlled) values
   \item \textbf{Taint propagation} through function call boundaries
@@ -29,12 +29,12 @@ These are not isolated bugs but \textbf{systematic limitations} in the verifier'
 
 \subsection{Real Vulnerabilities Exist}
 
-Vulnerabilities 5.39 (\textbf{stack OOB write}) and 5.46b (\textbf{stack buffer overflow}) are not theoretical—they are:
+Vulnerabilities 5.39 (\textbf{eBPF-local stack OOB write}) and 5.46b (\textbf{packet buffer overflow}) are not theoretical—they are:
 \begin{itemize}
   \item \textbf{Confirmed to pass the verifier}
   \item \textbf{Confirmed to compile} to bytecode that preserves the vulnerability
   \item \textbf{Confirmed to execute} at runtime with observable \textbf{memory corruption}
-  \item \textbf{Proven memory write primitives}; full exploitation would require kernel-specific adaptation
+  \item \textbf{Proven memory write primitives} with scope limitations: 5.39 is eBPF-sandbox-limited; 5.46b is packet-memory-limited
 \end{itemize}
 
 \subsection{Evidence Chain Validation}
@@ -59,8 +59,8 @@ This chain validates that the vulnerabilities are real, not artifacts of analysi
 \hline
 \textbf{ID} & \textbf{Type} & \textbf{Impact} & \textbf{Severity} \\
 \hline
-5.46b & Buffer Overflow & Kernel memory write primitive (out-of-bounds write) & HIGH \\
-5.39 & Stack OOB Write & Kernel memory write primitive (stack corruption) & HIGH \\
+5.39 & Stack OOB Write & eBPF-local stack corruption (DoS-capable, sandbox-limited) & MEDIUM-HIGH \\
+5.46b & Packet Buffer OOB & Packet memory corruption (bounds gap, non-kernel impact) & MEDIUM \\
 5.06d & Type Mismatch & Runtime trigger, potential exploitable in context & MEDIUM \\
 5.06b & Arg Count Mismatch & Runtime trigger, limited direct impact & MEDIUM \\
 5.06a & Type Mismatch & Runtime trigger, limited direct impact & MEDIUM \\
@@ -120,9 +120,9 @@ This project builds directly on the prior team's theoretical assessment. Where t
 \textbf{Extension}: This work added:
 \begin{itemize}
   \item Functional PoCs and runtime evidence
-  \item Quantification of memory corruption (bytes written, offsets)
+  \item Quantification of memory corruption (bytes written, offsets, scope)
   \item A reproducible test infrastructure
-  \item Clear path to privilege escalation
+  \item Clear documentation of exploitation scope limitations: 5.39 is eBPF-sandbox-limited (DoS-capable, not RCE (Remote Code Execution)); 5.46b is packet-buffer-limited (not kernel compromise)
 \end{itemize}
 
 \section{Recommendations}
@@ -130,7 +130,7 @@ This project builds directly on the prior team's theoretical assessment. Where t
 \subsection{For Linux Kernel Developers}
 
 \begin{enumerate}[label=\arabic*.]
-  \item \textbf{Review and apply} the proposed verifier fixes (ABI checking, taint propagation)
+  \item \textbf{Review and apply} the proposed verifier fixes (ABI (Application Binary Interface) checking, taint propagation)
   \item \textbf{Expand the eBPF test suite} to cover the identified vulnerability patterns
   \item \textbf{Consider formal verification} of critical verifier components
   \item \textbf{Backport verifier fixes} to stable kernel releases
@@ -163,10 +163,10 @@ This project builds directly on the prior team's theoretical assessment. Where t
 The prior team's assessment identified approximately 60 potential violations across ISO-IEC TS 17961-2013 rules. This study analyzed 5 of the most promising cases. Priority extensions include:
 
 \begin{enumerate}[label=\arabic*.]
-  \item \textbf{Complete the exploitation}: Demonstrate full privilege escalation for 5.39 and 5.46b through ROP chain development and return address targeting
+  \item \textbf{Clarify scope limitations}: Investigate whether sandbox mitigations for 5.39 (eBPF-local stack) and scope boundaries for 5.46b (packet-buffer) can be bypassed or if they represent fundamental security properties
   \item \textbf{Analyze remaining vulnerabilities}: Select 10--15 additional "exploitable" or "limited" cases and develop PoCs
   \item \textbf{Build an automated test harness}: Enable testing of all 60+ patches against the verifier for a complete inventory
-  \item \textbf{ABI chaining}: Investigate whether 5.06a/b/d can leak kernel memory or enable multi-stage attacks
+  \item \textbf{ABI (Application Binary Interface) chaining}: Investigate whether 5.06a/b/d can leak kernel memory or enable multi-stage attacks
 \end{enumerate}
 
 \subsection{Portability and Generalization}
@@ -192,7 +192,7 @@ This will determine:
 The eBPF verifier should be enhanced to address the identified gaps:
 
 \begin{enumerate}[label=\arabic*.]
-  \item \textbf{ABI enforcement}: Track function pointer types, validate call sites against declarations, reject mismatched argument counts and types
+  \item \textbf{ABI (Application Binary Interface) enforcement}: Track function pointer types, validate call sites against declarations, reject mismatched argument counts and types
   \item \textbf{Improved taint tracking}: Propagate taint through function calls, require explicit bounds checking on tainted values, validate that bounds are tight
   \item \textbf{Test submission}: Submit patches to the Linux kernel to fix each vulnerability class and measure performance impact
 \end{enumerate}

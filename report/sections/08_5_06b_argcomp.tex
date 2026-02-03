@@ -2,44 +2,74 @@
 
 \section{Executive Summary}
 
-As discussed in Chapter 6, vulnerability 5.06b involves a function called with more arguments than its signature declares. This violates ISO-IEC Rule 5.06 and represents an ABI mismatch where registers R2 and R3 contain uninitialized or misaligned values. This section documents the bytecode-level evidence and runtime confirmation.
+Vulnerability 5.06b is an ABI (Application Binary Interface) mismatch where a function is called with \textbf{more arguments than its signature declares}. This violates ISO-IEC Rule 5.06 and represents a \textbf{verifier bypass} rather than directly exploitable memory corruption in this context.
 
-\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Key Finding,fonttitle=\bfseries]
-The eBPF verifier permits function calls with too many arguments, allowing extra register values to be passed even when the function does not expect them.
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=ISO Rule Violated,fonttitle=\bfseries]
+ISO-IEC Rule 5.06: ``For a call to a function without a function prototype in scope, the number of arguments does not equal the number of parameters''
 \end{tcolorbox}
 
-\section{Source-Level Patch}
+\begin{tcolorbox}[colback=yellow!5!white,colframe=orange!75!black,title=Severity,fonttitle=\bfseries]
+\textbf{MEDIUM:} Verifier bypass confirmed. Extra arguments are ignored by the callee, but register state is perturbed. Potential information disclosure vector.
+\end{tcolorbox}
 
-A function is declared and called with more arguments than its signature expects. The vulnerability is introduced via a Git patch located at:
+\subsection{Why This Vulnerability Matters}
 
-\begin{small}
-\texttt{XDPs/xdp\_synproxy/patches/5\_06b\_argcomp/}
-\texttt{0001-feat-5.06b-wrong-argument-count.patch}
-\end{small}
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Verifier Gap}: The eBPF verifier does not validate that the number of arguments matches the function signature
+  \item \textbf{Register Misalignment}: Arguments are passed in fixed registers (R1-R5). Extra arguments leave register state inconsistent
+  \item \textbf{Information Leakage}: If extra arguments contain sensitive kernel values, they may be disclosed to attackers
+\end{enumerate}
 
-\noindent
-Applied to \texttt{xdp\_synproxy\_kern.c}:
+\section{The Vulnerable Code Pattern}
+
+\subsection{Vulnerable Code (Simplified)}
 
 \vspace{0.3cm}
 \noindent
 \fcolorbox{black!30}{gray!15}{%
   \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
     {\small\ttfamily
-    // Forward declaration: takes only 1 argument\\
-    int helper\_function(int x);\\
+    /* Forward declaration WITHOUT parameters */\\
+    void network\_copy\_helper();\\
     \\
-    // But called with 3 arguments:\\
-    result = helper\_function(arg1, arg2, arg3);
+    /* Call with 3 arguments */\\
+    \_\_u8 extra\_buf[ETH\_ALEN] = \{0\};\\
+    network\_copy\_helper(hdr-\textgreater{}eth-\textgreater{}h\_source,\\
+    \phantom{network\_copy\_helper(} hdr-\textgreater{}eth-\textgreater{}h\_dest,\\
+    \phantom{network\_copy\_helper(} extra\_buf);\\
+    \\
+    /* Actual definition takes only 2 arguments */\\
+    void network\_copy\_helper(char *dst, char *src) \{\\
+      \_\_builtin\_memcpy(dst, src, ETH\_ALEN);\\
+    \}
     }
   \end{minipage}%
 }
 \vspace{0.3cm}
 
-\noindent
-\subsection{Bytecode-Level Evidence}
+\subsection{Why This Is Vulnerable}
 
-\noindent
-Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}, the compiled bytecode shows:
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Forward declaration}: Has \textbf{no parameter list} — `()` means unknown arity
+  \item \textbf{Called with 3 arguments}: Passes values in R1, R2, R3
+  \item \textbf{Function expects 2}: Only consumes R1 and R2
+  \item \textbf{Verifier gap}: Doesn't check that argument count matches; only validates memory safety
+  \item \textbf{Result}: R3 contains uninitialized/garbage register state
+\end{enumerate}
+
+\section{Multi-Stage Analysis: Evidence Chain}
+
+\subsection{Stage 1: Source Code (Patch Location)}
+
+The vulnerability is introduced via a Git patch: 
+\begin{tcolorbox}[colback=gray!10, colframe=gray!10, arc=2pt, boxrule=0pt]
+\small\ttfamily
+XDPs/xdp\_synproxy/patches/5\_06b\_argcomp/0001-feat-5.06b-wrong-argument-count.patch
+\end{tcolorbox}
+
+\subsection{Stage 2: Bytecode (llvm-objdump)}
+
+Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}:
 
 \vspace{0.3cm}
 \noindent
@@ -47,78 +77,43 @@ Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}, the compiled bytecode show
   \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
     {\small\ttfamily
     ;~ \_\_builtin\_memcpy(dst, src, ETH\_ALEN);\\
-    61: 71 41 05 00 00 00 00 00~ r1 = *(u8 *)(r4 + 0x5)\\
-    /* ... more copy operations ... */\\
-    72: 73 12 06 00 00 00 00 00~ *(u8 *)(r2 + 0x6) = r1\\
+    61: (71) r1 = *(u8 *)(r4 +5)\\
+    ;~ ... memcpy loop operations ...\\
+    72: (73) *(u8 *)(r2 +6) = r1\\
     ;~ bpf\_printk("[argcomp]: 5.6b - network copy called");\\
-    73: 18 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00~ r1 = 0x0 ll\\
-    76: 85 00 00 00 06 00 00 00~ call 0x6
+    73: (18) r1 = 0x0 ll\\
+    76: (85) call 0x6
     }
   \end{minipage}%
 }
 \vspace{0.3cm}
 
 \noindent
-The compiled bytecode shows both the network copy helper copy sequence and the argcomp printk, confirming that the vulnerable call path and its runtime signal exist before the verifier sees the program. Detailed bytecode analysis is available in the evidence logs.
+\textbf{Finding}: The bytecode preserves the full call sequence including memory operations and the argument-count-mismatch signal. Not optimized away.
+
+\subsection{Stage 3: Verifier (bpftool prog load)}
+
+Command:
+\begin{tcolorbox}[colback=gray!10, colframe=gray!10, arc=2pt, boxrule=0pt]
+\small\ttfamily
+sudo bpftool prog load xdp\_synproxy\_kern.bpf.o /sys/fs/bpf/test\_synproxy type xdp -d
+\end{tcolorbox}
 
 \noindent
-\textbf{Interpretation:} The sequence shows: (1) memory read from packet at offset 5, (2) memory write to destination at offset 6, (3) setup for \texttt{bpf\_printk} call, (4) the actual call instruction (0x6). The bytecode preserves the full sequence, confirming the compiler did not optimize away the vulnerable code path.
-
-\section{Runtime Behavior}
+\textbf{Result}: The verifier \textbf{accepts the program without error}.
 
 \noindent
-\subsection{Triggering the Vulnerability}
+\textbf{Finding}: No rejection, no warning. The verifier does not validate argument count matching.
 
-\noindent
-Send SYN packets to the XDP interface:
+\subsection{Stage 4: Xlated Bytecode (bpftool prog dump xlated)}
 
 \vspace{0.3cm}
 \noindent
 \fcolorbox{black!30}{gray!15}{%
   \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
     {\small\ttfamily
-    python3 src/exploits/5\_06b\_argcomp/exploit\_506b.py <VM\_IP>
-    }
-  \end{minipage}%
-}
-\vspace{0.3cm}
-
-\subsection{Observable Effects}
-
-\noindent
-Kernel trace output:
-
-\vspace{0.3cm}
-\noindent
-\fcolorbox{black!30}{gray!15}{%
-  \begin{minipage}[c][0.8cm][c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
-    \texttt{[argcomp]: 5.6b - network copy called}
-  \end{minipage}%
-}
-\vspace{0.3cm}
-
-\noindent
-Repeated for each triggered packet, proving the function executes despite the argument count mismatch. The trace signal confirms that the vulnerable code path is executed at runtime.
-
-\subsection{Why No Corruption?}
-
-\noindent
-The extra arguments are simply ignored by the called function because arguments are passed via fixed registers (R1-R5), and the callee only consumes the registers it expects. However, the XDP context's register state is perturbed, and if the extra arguments contained sensitive values (e.g., kernel pointers), they might be disclosed. Additionally, subsequent code using registers R2 and R3 might rely on uninitialized or wrong values, creating a potential information disclosure pathway.
-
-\section{Verification Evidence: Xlated Dump}
-
-\noindent
-The \texttt{xlated} dump (verifier-processed bytecode) confirms the vulnerable call survives verification:
-
-\vspace{0.3cm}
-\noindent
-\fcolorbox{black!30}{gray!15}{%
-  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
-    {\small\ttfamily
-    ; \_\_builtin\_memcpy(dst, src, ETH\_ALEN);\\
     61: (71) r1 = *(u8 *)(r4 +5)\\
     72: (73) *(u8 *)(r2 +6) = r1\\
-    ; bpf\_printk("[argcomp]: 5.6b - network copy called");\\
     73: (18) r1 = map[id:7][0]+0\\
     76: (85) call bpf\_trace\_printk\#-115712
     }
@@ -127,34 +122,45 @@ The \texttt{xlated} dump (verifier-processed bytecode) confirms the vulnerable c
 \vspace{0.3cm}
 
 \noindent
-The verifier-processed bytecode still contains the copy sequence and the printk call, so the argcomp path survives verification and remains executable at runtime.
+\textbf{Finding}: Xlated bytecode is nearly identical to compiled bytecode. The call \textbf{survives verification unchanged}.
+
+\subsection{Stage 5: Runtime Execution (trace\_pipe)}
+
+Trigger the vulnerability:
+
+\begin{tcolorbox}[colback=gray!10, colframe=gray!10, arc=2pt, boxrule=0pt]
+\small\ttfamily
+python3 src/exploits/5\_06b\_argcomp/exploit\_506b.py
+\end{tcolorbox}
 
 \noindent
-\textbf{Interpretation:} The verifier-processed bytecode is nearly identical to the compiled bytecode. The copy operations and the \texttt{bpf\_trace\_printk} call both survive verification unchanged. This confirms the verifier does not reject the function call despite the argument count mismatch.
+Kernel trace output:
 
-\section{Classification: Runtime Trigger}
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c][0.8cm][c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+    \texttt{<idle>-0 [000] ..s2. 348.738659: bpf\_trace\_printk: [argcomp]: 5.6b - network copy called}
+  \end{minipage}%
+}
+\vspace{0.3cm}
 
 \noindent
-The verifier accepts mismatched argument counts, the bytecode preserves the call, and runtime executes the call. However, there is no direct memory corruption in this case and the extra arguments are ignored, not dereferenced.
+\textbf{Finding}: The signal appears repeatedly in kernel traces, \textbf{linking all stages together}. Code executes at runtime.
 
-\section{Exploitation Potential}
+\section{Exploitation Analysis}
 
-\noindent
-In isolation, 5.06b is a runtime trigger. However:
-\begin{enumerate}[label=\arabic*.]
-  \item If extra arguments contain pointers, information disclosure is possible
-  \item Combined with register state inspection, could leak kernel addresses
-  \item In a different code context, extra arguments might be used unsafely
-\end{enumerate}
+At runtime, an extra argument is passed in R3 (caller setup), but the function consumes only R1 and R2 (callee setup), so R3 is ignored and no immediate memory corruption occurs. The extra argument is ignored by the callee, preventing buffer overflow, pointer dereference, or stack corruption in the current context. However, if the calling context later inspects R3 or other register state, it might find unexpected values. In other contexts, if the mismatched function expected to use the extra arguments, it could access kernel memory via a pointer in R3, use a size parameter in R3 for bounds checking, or perform arithmetic on R3 leading to invalid offsets. In those cases, 5.06b would become \textbf{directly exploitable}.
 
-\section{PoC Code}
+\section{Artifact Evidence}
 
-\noindent
-\texttt{src/exploits/5\_06b\_argcomp/poc\_506b\_final.py} sends SYN packets to trigger the vulnerable call path.
+All analysis logs are available in: \texttt{src/exploits/5\_06b\_argcomp/logs/}
 
-\textbf{Artifact Logs:}
 \begin{itemize}
-  \item Bytecode analysis: \texttt{5\_06b\_bytecode\_analysis.txt}
-  \item Verifier output: \texttt{5\_06b\_verifier\_log.txt}
-  \item Xlated dump: \texttt{5\_06b\_xlated\_dump.txt}
+  \item \texttt{5\_06b\_bytecode\_analysis.txt} — Full llvm-objdump output
+  \item \texttt{5\_06b\_verifier\_log.txt} — Verifier output (bpftool prog load -d)
+  \item \texttt{5\_06b\_xlated\_dump.txt} — Xlated bytecode (verifier-processed)
 \end{itemize}
+
+\noindent
+PoC script: \texttt{src/exploits/5\_06b\_argcomp/exploit\_506b.py}

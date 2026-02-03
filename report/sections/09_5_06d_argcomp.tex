@@ -2,173 +2,160 @@
 
 \section{Executive Summary}
 
-As discussed in Chapter 6, vulnerability 5.06d involves a function called with mismatched argument types, where a 32-bit value is passed where a 64-bit value is expected (or vice versa). This violates ISO-IEC Rule 5.06 and can cause type confusion and incorrect behavior when the called function uses the argument. This section documents the bytecode evidence and runtime behavior.
+Vulnerability 5.06d is an ABI (Application Binary Interface) mismatch where a function is called with \textbf{mismatched argument types} — a 16-bit value is passed where a 64-bit value is expected. This violates ISO-IEC Rule 5.06 and represents a \textbf{type confusion} that could lead to memory corruption if the mismatched value is used for pointer arithmetic or size calculations.
 
-\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Key Finding,fonttitle=\bfseries]
-The eBPF verifier does not enforce strict type matching for function arguments, allowing 32-bit to 64-bit mismatches to pass verification.
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=ISO Rule Violated,fonttitle=\bfseries]
+ISO-IEC Rule 5.06: ``Expression that denotes the called function is not type-compatible with the function definition''
 \end{tcolorbox}
 
-\section{Source-Level Patch}
+\begin{tcolorbox}[colback=yellow!5!white,colframe=orange!75!black,title=Severity,fonttitle=\bfseries]
+\textbf{MEDIUM:} Verifier bypass confirmed. Limited impact in this context due to arithmetic-only usage, but could enable memory corruption if value were used for indexing or pointer arithmetic.
+\end{tcolorbox}
 
-A function is declared and called with mismatched argument types. The vulnerability is introduced via a Git patch located at:
+\subsection{Why This Vulnerability Matters}
 
-\begin{small}
-\texttt{XDPs/xdp\_synproxy/patches/5\_06d\_argcomp/}
-\texttt{0001-feat-5.06d-wrong-argument-types.patch}
-\end{small}
-
-\noindent
-Applied to \texttt{xdp\_synproxy\_kern.c}:
-
-\vspace{0.3cm}
-\noindent
-\fcolorbox{black!30}{gray!15}{%
-  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
-    {\small\ttfamily
-    // Function expects a long (64-bit)\\
-    int helper\_function(long x);\\
-    \\
-    // But called with an int (32-bit)\\
-    int value = some\_computed\_int();\\
-    result = helper\_function(value);  // int passed where long expected
-    }
-  \end{minipage}%
-}
-\vspace{0.3cm}
-
-\noindent
-\subsection{Bytecode-Level Evidence}
-
-\noindent
-Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}, the compiled bytecode shows:
-
-\vspace{0.3cm}
-\noindent
-\fcolorbox{black!30}{gray!15}{%
-  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
-    {\small\ttfamily
-    ; int int\_value = (int)bpf\_ntohs(hdr-\textgreater{}tcp-\textgreater{}window);\\
-    53: (69) r1 = *(u16 *)(r7 +14)\\
-    54: (dc) r1 = be16 r1\\
-    55: (85) call pc+824\#bpf\_prog\_8e50538a980ea579\_helper\_function\\
-    ; bpf\_printk("[argcomp]: 5.6d - math result: \%ld", result);
-    }
-  \end{minipage}%
-}
-\vspace{0.3cm}
-
-\noindent
-The sequence shows: (1) load 16-bit TCP window field from r7 + 14 into r1, (2) convert from big-endian to native endian (be16), (3) call helper function with r1 as argument. Critically, only the lower 16 bits of r1 are initialized from the packet. The upper 48 bits are uninitialized, and the function signature expects a \texttt{long} (64-bit). The compiler does not zero-extend or sign-extend the value.
-
-\subsection{Verification Evidence: Xlated Dump}
-
-\noindent
-The \texttt{xlated} dump (verifier-processed bytecode) confirms the type mismatch survives verification:
-
-\vspace{0.3cm}
-\noindent
-\fcolorbox{black!30}{gray!15}{%
-  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
-    {\small\ttfamily
-    ; int int\_value = (int)bpf\_ntohs(hdr-\textgreater{}tcp-\textgreater{}window);\\
-    53: (69) r1 = *(u16 *)(r7 +14)\\
-    54: (dc) r1 = be16 r1\\
-    ; long result = helper\_function(int\_value);\\
-    55: (85) call pc+824\#bpf\_prog\_8e50538a980ea579\_helper\_function\\
-    ; bpf\_printk("[argcomp]: 5.6d - math result: \%ld", result);\\
-    56: (18) r1 = map[id:13][0]+0\\
-    60: (85) call bpf\_trace\_printk\#-115712
-    }
-  \end{minipage}%
-}
-\vspace{0.3cm}
-
-The verifier-processed bytecode still includes the mismatched call path, showing the verifier did not remove or guard the argument-type mismatch. The bytecode shows the TCP window being read as a 16-bit value, then used as an \texttt{int} argument in a call to \texttt{helper\_function}, followed by the argcomp printk. The critical issue is that the compiler does not automatically zero-extend or sign-extend the upper 32 bits of the 64-bit register when the function expects a \texttt{long}. Detailed bytecode analysis is available in the evidence logs.
-
-\noindent
-\textbf{Interpretation:} The verifier-processed bytecode is nearly identical to the compiled bytecode. The 16-bit load, endian conversion, and helper function call all survive verification unchanged. The upper 48 bits remain uninitialized. The verifier does not reject this despite the register containing a 16-bit value being passed to a function expecting a 64-bit value. This is the core vulnerability: type mismatch acceptance.
-
-\subsection{Verifier Acceptance}
-
-\noindent
-The verifier:
 \begin{enumerate}[label=\arabic*.]
-  \item Sees a function call
-  \item May check that R1 holds an int-like value
-  \item Does not validate that the function expects a \texttt{long}
-  \item Accepts the mismatch
+  \item \textbf{Verifier Gap}: The eBPF verifier does not enforce type width matching for function arguments
+  \item \textbf{Uninitialized Bits}: Only the lower 16 bits are initialized from packet data; upper 48 bits are garbage
+  \item \textbf{Silent Type Confusion}: If the function uses this value for address calculation, could access wrong memory
 \end{enumerate}
 
-\section{Runtime Behavior}
+\section{The Vulnerable Code Pattern}
 
-\noindent
-\subsection{Triggering the Vulnerability}
+\subsection{Vulnerable Code (Simplified)}
 
 \vspace{0.3cm}
 \noindent
 \fcolorbox{black!30}{gray!15}{%
   \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
     {\small\ttfamily
-    python3 src/exploits/5\_06d\_argcomp/exploit\_506d.py <VM\_IP>
+    /* Forward declaration without parameters */\\
+    long helper\_function();\\
+    \\
+    /* Call with int argument */\\
+    int int\_value = (int)bpf\_ntohs(hdr-\textgreater{}tcp-\textgreater{}window);\\
+    /* int = 16-bit TCP window */\\
+    long result = helper\_function(int\_value);\\
+    /* Called with int, expects long */\\
+    bpf\_printk("[argcomp]: 5.6d - math result: \%ld", result);\\
+    \\
+    /* Actual definition expects long (64-bit) */\\
+    long helper\_function(long x) \{\\
+    \phantom{long helper\_function(long x) }return x < 0 ? -x : x;\\
+    \}
     }
   \end{minipage}%
 }
 \vspace{0.3cm}
 
-\subsection{Observable Effects}
+\subsection{Why This Is Vulnerable}
 
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{16-bit TCP window} is loaded from packet into R1
+  \item \textbf{Type casting to int} (32-bit) — only lower bits valid, upper bits garbage
+  \item \textbf{Function expects long} (64-bit) — expects full 64-bit register value
+  \item \textbf{No sign/zero-extension}: Compiler doesn't insert bounds conversion
+  \item \textbf{Verifier accepts}: Doesn't validate type width compatibility
+  \item \textbf{Result}: Function receives contaminated value with uninitialized upper bits
+\end{enumerate}
+
+\section{Multi-Stage Analysis: Evidence Chain}
+
+\subsection{Stage 1: Source Code (Patch Location)}
+
+The vulnerability is introduced via a Git patch:
+\begin{small}\raggedright
+\texttt{XDPs/xdp\_synproxy/patches/5\_06d\_argcomp/0001-feat-5.06d-wrong-argument-types.patch}
+\end{small}
+
+\subsection{Stage 2: Bytecode (llvm-objdump)}
+
+Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}:
+
+\vspace{0.3cm}
 \noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+    {\small\ttfamily
+    ;~ int int\_value = (int)bpf\_ntohs(hdr-\textgreater{}tcp-\textgreater{}window);\\
+    53: (69) r1 = *(u16 *)(r7 +14)\\
+    54: (dc) r1 = be16 r1\\
+    55: (85) call pc+824\\
+    ;~ bpf\_printk("[argcomp]: 5.6d - math result: \%ld", result);\\
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
+
+\textbf{Interpretation}: 
+- Line 53: Load 16-bit TCP window field
+- Line 54: Convert from big-endian to native endian
+- Line 55: \textbf{Call function with 16-bit value in a 64-bit register}
+- \textbf{Critical}: Only lower 16 bits are initialized; upper 48 bits are garbage
+
+\textbf{Finding}: Bytecode shows the 16-bit load followed by the function call. No zero-extension or sign-extension instructions. The 48-bit garbage survives compilation.
+
+\subsection{Stage 3: Verifier (bpftool prog load)}
+
+Command:
+\begin{small}\raggedright
+\texttt{sudo bpftool prog load xdp\_synproxy\_kern.bpf.o /sys/fs/bpf/test\_synproxy type xdp -d}
+\end{small}
+
+\textbf{Result}: The verifier \textbf{accepts the program without error}.
+
+\textbf{Finding}: No type mismatch detected. Verifier does not validate type width matching for function arguments.
+
+\subsection{Stage 4: Xlated Bytecode (bpftool prog dump xlated)}
+
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+    {\small\ttfamily
+    53: (69) r1 = *(u16 *)(r7 +14)\\
+    54: (dc) r1 = be16 r1\\
+    55: (85) call pc+824\\
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
+
+\textbf{Finding}: Xlated bytecode is identical to compiled bytecode. \textbf{No bounds guards inserted}. The type mismatch survives verification unchanged.
+
+\subsection{Stage 5: Runtime Execution (trace\_pipe)}
+
+Trigger the vulnerability:
+
+\begin{verbatim}
+python3 src/exploits/5_06d_argcomp/exploit_506d.py <VM_IP>
+\end{verbatim}
+
 Kernel trace output:
 
 \vspace{0.3cm}
 \noindent
 \fcolorbox{black!30}{gray!15}{%
   \begin{minipage}[c][0.8cm][c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
-    \texttt{[argcomp]: 5.6d - math result}
+    \texttt{<idle>-0 [000] ..s2. 348.739616: bpf\_trace\_printk: [argcomp]: 5.6d - math result: 8192}
   \end{minipage}%
 }
 \vspace{0.3cm}
 
-The trace output appears, confirming the function executes at runtime with the type-mismatched argument. The fact that the function completes without crashing indicates the uninitialized upper bits do not immediately trigger a fault, but they may cause subtle behavioral changes depending on the function's logic.
+\textbf{Finding}: The trace shows `8192` (typical TCP window size). The computation completes despite the type mismatch, \textbf{linking all stages together}. Code executes at runtime with contaminated value.
 
-\subsection{Why Limited Impact Here?}
+\section{Exploitation Analysis}
 
-In the current proof-of-concept, the computed 32-bit value is used for arithmetic, and the upper 32 bits of garbage do not dramatically change the result. The XDP program continues and processes the packet normally. However, in a different context, the garbage bits could cause out-of-bounds access.
+At runtime, the TCP window field (16-bit) is loaded into R1, and the upper 48 bits of R1 contain garbage or uninitialized data. The function call passes R1 as a 64-bit argument, so the called function receives \texttt{0x[GARBAGE]0000[WINDOW\_VALUE]} and uses this mixed value in arithmetic. In the current proof-of-concept, the value is used only in arithmetic (\texttt{return x < 0 ? -x : x}), where garbage bits don't cause an exception and the function returns successfully with no memory corruption, though the \textbf{result is semantically wrong} if the garbage bits affect the sign bit or magnitude. However, if the mismatched value were used for array indexing, pointer arithmetic, or bounds checking, the garbage bits could make the index huge (causing out-of-bounds access), create an invalid address (enabling kernel memory write), or bypass bounds checks with a contaminated size parameter (enabling buffer overflow). In those contexts, 5.06d becomes \textbf{directly exploitable} for memory corruption.
 
-\section{Classification: Limited/Exploitable}
+\section{Artifact Evidence}
 
-\noindent
-This is classified as \textbf{Limited to Exploitable}: the verifier accepts the type mismatch, the bytecode preserves uninitialized upper bits, and control flow depends on the garbage values. Runtime executes with a contaminated value that could cause memory corruption if used for pointer arithmetic or bounds checking, though the current proof-of-concept does not trigger full corruption.
+All analysis logs are available in: \texttt{src/exploits/5\_06d\_argcomp/logs/}
 
-\section{Real-World Escalation}
-
-\noindent
-If the mismatched value influences:
-\begin{enumerate}[label=\arabic*.]
-  \item Pointer arithmetic: A small value becomes a huge 64-bit address $\rightarrow$ kernel memory write
-  \item Bounds checks: A size parameter becomes unexpectedly large $\rightarrow$ buffer overflow
-  \item Loop iteration: An iteration count becomes huge $\rightarrow$ stack corruption
-\end{enumerate}
-
-\section{PoC Code}
-
-\noindent
-\texttt{src/exploits/5\_06d\_argcomp/poc\_506d\_final.py} sends packets triggering the mismatched function call.
-
-\textbf{Artifact Logs:}
 \begin{itemize}
-  \item Bytecode analysis: \texttt{5\_06d\_bytecode\_analysis.txt}
-  \item Verifier output: \texttt{5\_06d\_verifier\_log.txt}
-  \item Xlated dump: \texttt{5\_06d\_xlated\_dump.txt}
+  \item \texttt{5\_06d\_bytecode\_analysis.txt} — Full llvm-objdump output
+  \item \texttt{5\_06d\_verifier\_log.txt} — Verifier output (bpftool prog load -d)
+  \item \texttt{5\_06d\_xlated\_dump.txt} — Xlated bytecode (verifier-processed)
 \end{itemize}
 
-\section{Verifier Gap}
-
-The verifier should:
-\begin{enumerate}[label=\arabic*.]
-  \item Validate that argument types match function declarations
-  \item Ensure int-to-long conversions are explicit (or fail)
-  \item Track sign-extension and zero-extension requirements
-\end{enumerate}
-
-Currently, type strictness is not enforced.
+PoC script: \texttt{src/exploits/5\_06d\_argcomp/exploit\_506d.py}

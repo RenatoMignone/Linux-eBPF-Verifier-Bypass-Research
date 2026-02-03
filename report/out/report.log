@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.1.15)  2 FEB 2026 16:30
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.1.15)  3 FEB 2026 16:09
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -422,18 +422,26 @@ LaTeX Font Info:    Trying to load font information for U+psy on input line 64.
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/upsy.fd
 File: upsy.fd 2001/06/04 font definitions for U/psy.
 ))
+(/usr/share/texlive/texmf-dist/tex/latex/float/float.sty
+Package: float 2001/11/08 v1.3d Float enhancements (AL)
+\c@float@type=\count304
+\float@exts=\toks29
+\float@box=\box56
+\@float@everytoks=\toks30
+\@floatcapt=\box57
+)
 (/usr/share/texlive/texmf-dist/tex/latex/tcolorbox/tcolorbox.sty
 Package: tcolorbox 2024/01/10 version 6.2.0 text color boxes
 
 (/usr/share/texlive/texmf-dist/tex/latex/pgf/basiclayer/pgf.sty
 (/usr/share/texlive/texmf-dist/tex/latex/pgf/utilities/pgfrcs.sty
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/utilities/pgfutil-common.tex
-\pgfutil@everybye=\toks29
+\pgfutil@everybye=\toks31
 \pgfutil@tempdima=\dimen183
 \pgfutil@tempdimb=\dimen184
 )
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/utilities/pgfutil-latex.def
-\pgfutil@abb=\box56
+\pgfutil@abb=\box58
 )
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/utilities/pgfrcs.code.tex
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/pgf.revision.tex)
@@ -447,12 +455,12 @@ Package: pgf 2023-01-15 v3.1.10 (3.1.10)
 Package: pgfsys 2023-01-15 v3.1.10 (3.1.10)
 
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/utilities/pgfkeys.code.tex
-\pgfkeys@pathtoks=\toks30
-\pgfkeys@temptoks=\toks31
+\pgfkeys@pathtoks=\toks32
+\pgfkeys@temptoks=\toks33
 
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/utilities/pgfkeyslibraryfiltered
 .code.tex
-\pgfkeys@tmptoks=\toks32
+\pgfkeys@tmptoks=\toks34
 ))
 \pgf@x=\dimen185
 \pgf@y=\dimen186
@@ -466,14 +474,14 @@ Package: pgfsys 2023-01-15 v3.1.10 (3.1.10)
 \pgf@yd=\dimen194
 \w@pgf@writea=\write3
 \r@pgf@reada=\read2
-\c@pgf@counta=\count304
-\c@pgf@countb=\count305
-\c@pgf@countc=\count306
-\c@pgf@countd=\count307
-\t@pgf@toka=\toks33
-\t@pgf@tokb=\toks34
-\t@pgf@tokc=\toks35
-\pgf@sys@id@count=\count308
+\c@pgf@counta=\count305
+\c@pgf@countb=\count306
+\c@pgf@countc=\count307
+\c@pgf@countd=\count308
+\t@pgf@toka=\toks35
+\t@pgf@tokb=\toks36
+\t@pgf@tokc=\toks37
+\pgf@sys@id@count=\count309
  (/usr/share/texlive/texmf-dist/tex/generic/pgf/systemlayer/pgf.cfg
 File: pgf.cfg 2023-01-15 v3.1.10 (3.1.10)
 )
@@ -488,8 +496,8 @@ File: pgfsys-common-pdf.def 2023-01-15 v3.1.10 (3.1.10)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/systemlayer/pgfsyssoftpath.code.
 tex
 File: pgfsyssoftpath.code.tex 2023-01-15 v3.1.10 (3.1.10)
-\pgfsyssoftpath@smallbuffer@items=\count309
-\pgfsyssoftpath@bigbuffer@items=\count310
+\pgfsyssoftpath@smallbuffer@items=\count310
+\pgfsyssoftpath@bigbuffer@items=\count311
 )
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/systemlayer/pgfsysprotocol.code.
 tex
@@ -502,11 +510,11 @@ Package: pgfcore 2023-01-15 v3.1.10 (3.1.10)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/math/pgfmathutil.code.tex)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/math/pgfmathparser.code.tex
 \pgfmath@dimen=\dimen195
-\pgfmath@count=\count311
-\pgfmath@box=\box57
-\pgfmath@toks=\toks36
-\pgfmath@stack@operand=\toks37
-\pgfmath@stack@operation=\toks38
+\pgfmath@count=\count312
+\pgfmath@box=\box59
+\pgfmath@toks=\toks38
+\pgfmath@stack@operand=\toks39
+\pgfmath@stack@operation=\toks40
 )
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.code.tex)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.basic.code
@@ -527,7 +535,7 @@ tex)
 thmetics.code.tex)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/math/pgfmathcalc.code.tex)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/math/pgfmathfloat.code.tex
-\c@pgfmathroundto@lastzeros=\count312
+\c@pgfmathroundto@lastzeros=\count313
 ))
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/math/pgfint.code.tex)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepoints.code.te
@@ -563,10 +571,10 @@ File: pgfcorepathusage.code.tex 2023-01-15 v3.1.10 (3.1.10)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcorescopes.code.te
 x
 File: pgfcorescopes.code.tex 2023-01-15 v3.1.10 (3.1.10)
-\pgfpic=\box58
-\pgf@hbox=\box59
-\pgf@layerbox@main=\box60
-\pgf@picture@serial@count=\count313
+\pgfpic=\box60
+\pgf@hbox=\box61
+\pgf@layerbox@main=\box62
+\pgf@picture@serial@count=\count314
 )
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcoregraphicstate.c
 ode.tex
@@ -599,8 +607,8 @@ File: pgfcorearrows.code.tex 2023-01-15 v3.1.10 (3.1.10)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreshade.code.tex
 File: pgfcoreshade.code.tex 2023-01-15 v3.1.10 (3.1.10)
 \pgf@max=\dimen275
-\pgf@sys@shading@range@num=\count314
-\pgf@shadingcount=\count315
+\pgf@sys@shading@range@num=\count315
+\pgf@shadingcount=\count316
 )
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreimage.code.tex
 File: pgfcoreimage.code.tex 2023-01-15 v3.1.10 (3.1.10)
@@ -608,7 +616,7 @@ File: pgfcoreimage.code.tex 2023-01-15 v3.1.10 (3.1.10)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreexternal.code.
 tex
 File: pgfcoreexternal.code.tex 2023-01-15 v3.1.10 (3.1.10)
-\pgfexternal@startupbox=\box61
+\pgfexternal@startupbox=\box63
 )
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcorelayers.code.te
 x
@@ -627,7 +635,7 @@ File: pgfcorerdf.code.tex 2023-01-15 v3.1.10 (3.1.10)
 )))
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/modules/pgfmoduleshapes.code.tex
 File: pgfmoduleshapes.code.tex 2023-01-15 v3.1.10 (3.1.10)
-\pgfnodeparttextbox=\box62
+\pgfnodeparttextbox=\box64
 ) (/usr/share/texlive/texmf-dist/tex/generic/pgf/modules/pgfmoduleplot.code.tex
 File: pgfmoduleplot.code.tex 2023-01-15 v3.1.10 (3.1.10)
 )
@@ -642,8 +650,8 @@ Package: pgfcomp-version-0-65 2023-01-15 v3.1.10 (3.1.10)
 Package: pgfcomp-version-1-18 2023-01-15 v3.1.10 (3.1.10)
 )) (/usr/share/texlive/texmf-dist/tex/latex/tools/verbatim.sty
 Package: verbatim 2023-11-06 v1.5v LaTeX2e package for verbatim enhancements
-\every@verbatim=\toks39
-\verbatim@line=\toks40
+\every@verbatim=\toks41
+\verbatim@line=\toks42
 \verbatim@in@stream=\read3
 )
 (/usr/share/texlive/texmf-dist/tex/latex/environ/environ.sty
@@ -652,22 +660,22 @@ Package: environ 2014/05/04 v0.3 A new way to define environments
 (/usr/share/texlive/texmf-dist/tex/latex/trimspaces/trimspaces.sty
 Package: trimspaces 2009/09/17 v1.1 Trim spaces around a token list
 ))
-\tcb@titlebox=\box63
-\tcb@upperbox=\box64
-\tcb@lowerbox=\box65
-\tcb@phantombox=\box66
-\c@tcbbreakpart=\count316
-\c@tcblayer=\count317
-\c@tcolorbox@number=\count318
-\l__tcobox_tmpa_box=\box67
+\tcb@titlebox=\box65
+\tcb@upperbox=\box66
+\tcb@lowerbox=\box67
+\tcb@phantombox=\box68
+\c@tcbbreakpart=\count317
+\c@tcblayer=\count318
+\c@tcolorbox@number=\count319
+\l__tcobox_tmpa_box=\box69
 \l__tcobox_tmpa_dim=\dimen278
-\tcb@temp=\box68
-\tcb@temp=\box69
 \tcb@temp=\box70
 \tcb@temp=\box71
+\tcb@temp=\box72
+\tcb@temp=\box73
 )
-Package hyperref Info: Option `colorlinks' set `true' on input line 32.
-LaTeX Font Info:    Trying to load font information for T1+lmr on input line 38
+Package hyperref Info: Option `colorlinks' set `true' on input line 33.
+LaTeX Font Info:    Trying to load font information for T1+lmr on input line 39
 .
 
 (/usr/share/texmf/tex/latex/lm/t1lmr.fd
@@ -675,30 +683,30 @@ File: t1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 (/usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2024-01-04 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count319
-\l__pdf_internal_box=\box72
+\l__color_backend_stack_int=\count320
+\l__pdf_internal_box=\box74
 )
 (out/report.aux)
 \openout1 = `report.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 38.
-LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 39.
+LaTeX Font Info:    ... okay on input line 39.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 39.
+LaTeX Font Info:    ... okay on input line 39.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 39.
+LaTeX Font Info:    ... okay on input line 39.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 39.
+LaTeX Font Info:    ... okay on input line 39.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 39.
+LaTeX Font Info:    ... okay on input line 39.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 39.
+LaTeX Font Info:    ... okay on input line 39.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 39.
+LaTeX Font Info:    ... okay on input line 39.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 39.
+LaTeX Font Info:    ... okay on input line 39.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 39.
+LaTeX Font Info:    ... okay on input line 39.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -734,7 +742,7 @@ LaTeX Font Info:    ... okay on input line 38.
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-Package hyperref Info: Link coloring ON on input line 38.
+Package hyperref Info: Link coloring ON on input line 39.
 (out/report.out) (out/report.out)
 \@outlinefile=\write4
 \openout4 = `report.out'.
@@ -742,17 +750,17 @@ Package hyperref Info: Link coloring ON on input line 38.
 
 (/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count320
+\scratchcounter=\count321
 \scratchdimen=\dimen279
-\scratchbox=\box73
-\nofMPsegments=\count321
-\nofMParguments=\count322
-\everyMPshowfont=\toks41
-\MPscratchCnt=\count323
+\scratchbox=\box75
+\nofMPsegments=\count322
+\nofMParguments=\count323
+\everyMPshowfont=\toks43
+\MPscratchCnt=\count324
 \MPscratchDim=\dimen280
-\MPnumerator=\count324
-\makeMPintoPDFobject=\count325
-\everyMPtoPDFconversion=\toks42
+\MPnumerator=\count325
+\makeMPintoPDFobject=\count326
+\everyMPtoPDFconversion=\toks44
 ) (/usr/share/texlive/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
 Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
@@ -762,12 +770,12 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-\c@lstlisting=\count326
-<resources/images/polito_logo.png, id=839, 126.801pt x 115.632pt>
+\c@lstlisting=\count327
+<resources/images/polito_logo.png, id=895, 126.801pt x 115.632pt>
 File: resources/images/polito_logo.png Graphic file (type png)
 <use resources/images/polito_logo.png>
 Package pdftex.def Info: resources/images/polito_logo.png  used on input line 4
-3.
+4.
 (pdftex.def)             Requested size: 181.18439pt x 165.22899pt.
 
 [1
@@ -832,21 +840,24 @@ Overfull \hbox (0.3367pt too wide) in paragraph at lines 14--15
 r/m/n/10.95 (byte-code, ver-i-fier logs, trans-lated code, run-time traces)
  []
 
-[7
 
-]
+LaTeX Warning: `h' float specifier changed to `ht'.
+
 LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 4
 2.
- (/usr/share/texmf/tex/latex/lm/ts1lmr.fd
+(/usr/share/texmf/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-)) (./sections/02_background.tex
+) [7
+
+{/usr/share/texmf/fonts/enc/dvips/lm/lm-ts1.enc}]) (./sections/02_background.te
+x
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 5
 .
 
 (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-<resources/images/ebpf_architecture.jpg, id=1101, 1027.84pt x 561.09625pt>
+<resources/images/ebpf_architecture.jpg, id=1172, 1027.84pt x 561.09625pt>
 File: resources/images/ebpf_architecture.jpg Graphic file (type jpg)
 <use resources/images/ebpf_architecture.jpg>
 Package pdftex.def Info: resources/images/ebpf_architecture.jpg  used on input 
@@ -856,14 +867,20 @@ line 13.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[8{/usr/share/texmf/fonts/enc/dvips/lm/lm-ts1.enc}]
+[8
+pdfTeX warning (ext4): destination with the same identifier (name{table.1.1}) h
+as been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.24 
+     ]
 Overfull \hbox (17.07578pt too wide) in paragraph at lines 27--28
 \T1/lmr/m/n/10.95 The ver-i-fier is ex-traor-di-nar-ily \T1/lmr/bx/n/10.95 com-
 plex\T1/lmr/m/n/10.95 , com-pris-ing ap-prox-i-mately 20,000 lines in \T1/lmr/b
 x/n/10.95 ker-nel/bpf/ver-
  []
 
-<resources/images/xdp_stack_comparison.jpg, id=1108, 1027.84pt x 561.09625pt>
+<resources/images/xdp_stack_comparison.jpg, id=1179, 1027.84pt x 561.09625pt>
 File: resources/images/xdp_stack_comparison.jpg Graphic file (type jpg)
 <use resources/images/xdp_stack_comparison.jpg>
 Package pdftex.def Info: resources/images/xdp_stack_comparison.jpg  used on inp
@@ -872,23 +889,58 @@ ut line 39.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[9 <./resources/images/ebpf_architecture.jpg>]
-<resources/images/syn_proxy_flow.jpg, id=1114, 1027.84pt x 561.09625pt>
+[9
+pdfTeX warning (ext4): destination with the same identifier (name{figure.2.1}) 
+has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.44 
+      <./resources/images/ebpf_architecture.jpg>]
+<resources/images/syn_proxy_flow.jpg, id=1185, 1027.84pt x 561.09625pt>
 File: resources/images/syn_proxy_flow.jpg Graphic file (type jpg)
 <use resources/images/syn_proxy_flow.jpg>
 Package pdftex.def Info: resources/images/syn_proxy_flow.jpg  used on input lin
 e 51.
 (pdftex.def)             Requested size: 317.07614pt x 173.09044pt.
- [10 <./resources/images/xdp_stack_comparison.jpg> <./resources/images/syn_prox
-y_flow.jpg>] [11])
-(./sections/03_threat_model.tex
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[10
+pdfTeX warning (ext4): destination with the same identifier (name{figure.2.2}) 
+has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.62 
+      <./resources/images/xdp_stack_comparison.jpg>] [11
+pdfTeX warning (ext4): destination with the same identifier (name{figure.2.3}) 
+has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.98   \item \textbf
+                    {LLVM compilation}: Translates to eBPF bytecode (may opt...
+
+pdfTeX warning (ext4): destination with the same identifier (name{table.2.1}) h
+as been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.98   \item \textbf
+                    {LLVM compilation}: Translates to eBPF bytecode (may opt...
+ <./resources/images/syn_proxy_flow.jpg>]) (./sections/03_threat_model.tex
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <10> on input line 10.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <7> on input line 10.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <5> on input line 10.
- [12]) (./sections/04_methodology.tex
+
+[12
+pdfTeX warning (ext4): destination with the same identifier (name{table.3.1}) h
+as been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.35 
+     ]) (./sections/04_methodology.tex
 Overfull \hbox (50.08615pt too wide) in paragraph at lines 10--11
 []\T1/lmr/bx/n/10.95 Patch In-jec-tion\T1/lmr/m/n/10.95 : In-ject a spe-cific I
 SO-IEC TS 17961-2013 rule vi-o-la-tion into \T1/lmtt/m/n/10.95 xdp_synproxy_ker
@@ -896,13 +948,19 @@ n.c
  []
 
 [13]
-<resources/images/patch_lifecycle.jpg, id=1145, 1027.84pt x 561.09625pt>
+<resources/images/patch_lifecycle.jpg, id=1214, 1027.84pt x 561.09625pt>
 File: resources/images/patch_lifecycle.jpg Graphic file (type jpg)
 <use resources/images/patch_lifecycle.jpg>
 Package pdftex.def Info: resources/images/patch_lifecycle.jpg  used on input li
 ne 29.
 (pdftex.def)             Requested size: 339.72592pt x 185.45343pt.
- [14 <./resources/images/patch_lifecycle.jpg>] [15] [16]
+ [14
+pdfTeX warning (ext4): destination with the same identifier (name{figure.4.1}) 
+has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.38 
+      <./resources/images/patch_lifecycle.jpg>] [15] [16]
 Overfull \hbox (13.91042pt too wide) in paragraph at lines 118--119
 []\T1/lmr/bx/n/10.95 Problem\T1/lmr/m/n/10.95 : Run-ning \T1/lmtt/m/n/10.95 vmc
 tl.sh create \T1/lmr/m/n/10.95 failed be-cause the vir-tu-al-iza-tion tools (\T
@@ -923,14 +981,26 @@ in-con-sis-tent path ref-er-ences rel-a-tive to the \T1/lmtt/m/n/10.95 codebase
 /
  []
 
-) (./sections/05_environment.tex [18]
-<resources/images/VM_Structure.jpg, id=1171, 1027.84pt x 561.09625pt>
+) (./sections/05_environment.tex [18
+pdfTeX warning (ext4): destination with the same identifier (name{table.4.1}) h
+as been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1 \chapter
+            {Environment and Tooling}]
+<resources/images/VM_Structure.jpg, id=1241, 1027.84pt x 561.09625pt>
 File: resources/images/VM_Structure.jpg Graphic file (type jpg)
 <use resources/images/VM_Structure.jpg>
 Package pdftex.def Info: resources/images/VM_Structure.jpg  used on input line 
 9.
 (pdftex.def)             Requested size: 317.07614pt x 173.09044pt.
- [19 <./resources/images/VM_Structure.jpg>] [20] [21]
+ [19
+pdfTeX warning (ext4): destination with the same identifier (name{figure.5.1}) 
+has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.22 
+      <./resources/images/VM_Structure.jpg>] [20] [21]
 Underfull \hbox (badness 10000) in paragraph at lines 235--235
 \T1/lmtt/m/n/10 apt-get install -y clang llvm llvm-tools bpf-tools linux-header
 s-6.8 netcat-openbsd
@@ -941,49 +1011,128 @@ Underfull \hbox (badness 10000) in paragraph at lines 235--235
 
  []
 
-[22]) (./sections/06_vulnerability_overview.tex
-Overfull \hbox (16.93484pt too wide) in paragraph at lines 17--28
+[22
+pdfTeX warning (ext4): destination with the same identifier (name{table.5.1}) h
+as been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.237 \section
+              {Kernel and Target}]) (./sections/06_vulnerability_overview.tex
+Overfull \hbox (50.57468pt too wide) in paragraph at lines 17--28
  [] 
  []
 
-[23] [24]
-Overfull \hbox (32.18857pt too wide) in paragraph at lines 116--127
+[23] [24] [25]
+Overfull \hbox (73.1514pt too wide) in paragraph at lines 116--127
  [] 
  []
 
-[25]) (./sections/07_5_06a_argcomp.tex
+[26] [27]) (./sections/07_5_06a_argcomp.tex
 Overfull \hbox (39.70778pt too wide) in paragraph at lines 1--1
 []\T1/lmr/bx/n/24.88 Vulnerability 5.06a: Func-tion Pointer 
  []
 
-[26]
-Underfull \hbox (badness 10000) in paragraph at lines 42--42
+
+Underfull \hbox (badness 10000) in paragraph at lines 43--43
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 42--42
+Underfull \hbox (badness 10000) in paragraph at lines 43--43
 
  []
 
-[27]
-Overfull \hbox (40.0425pt too wide) in paragraph at lines 75--77
-\T1/lmr/m/n/10.95 Full byte-code dump avail-able in \T1/lmtt/m/n/10.95 src/expl
-oits/5_06a_argcomp/logs/5_06a_bytecode_analysis.txt\T1/lmr/m/n/10.95 . 
+[28]
+Overfull \hbox (95.23329pt too wide) in paragraph at lines 74--75
+[]\T1/lmtt/m/n/10 XDPs/xdp_synproxy/patches/5_06a_argcomp/0001-feat-5.06a-funct
+ion_pointer-type-incompatibility.patch 
  []
 
-[28]) (./sections/08_5_06b_argcomp.tex [29]
-Underfull \hbox (badness 10000) in paragraph at lines 35--35
+[29]
+Underfull \hbox (badness 10000) in paragraph at lines 102--103
+[]\T1/lmtt/m/n/10 sudo bpftool prog load xdp_synproxy_kern.bpf.o /sys/fs/bpf/te
+st_synproxy type
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 148--148
+[]\T1/lmtt/m/n/10.95 <idle>-0 [000] ..s2. 348.737756: bpf_trace_printk: [argcom
+p]: 5.6a -
+ []
+
+[30]) (./sections/08_5_06b_argcomp.tex
+Underfull \hbox (badness 10000) in paragraph at lines 47--47
 
  []
 
-[30] [31]) (./sections/09_5_06d_argcomp.tex
-Underfull \hbox (badness 10000) in paragraph at lines 36--36
+
+Underfull \hbox (badness 10000) in paragraph at lines 47--47
 
  []
 
-[32] [33] [34{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}])
-(./sections/10_5_39_taintnoproto.tex
+[31]
+Overfull \hbox (5.98355pt too wide) in paragraph at lines 67--68
+[]\T1/lmtt/m/n/10 XDPs/xdp_synproxy/patches/5_06b_argcomp/0001-feat-5.06b-wrong
+-argument-count.patch 
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 99--100
+[]\T1/lmtt/m/n/10 sudo bpftool prog load xdp_synproxy_kern.bpf.o /sys/fs/bpf/te
+st_synproxy type
+ []
+
+[32]
+Underfull \hbox (badness 10000) in paragraph at lines 145--145
+[]\T1/lmtt/m/n/10.95 <idle>-0 [000] ..s2. 348.738659: bpf_trace_printk: [argcom
+p]: 5.6b -
+ []
+
+[33]) (./sections/09_5_06d_argcomp.tex
+Underfull \hbox (badness 10000) in paragraph at lines 48--48
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 48--48
+
+ []
+
+[34]
+Overfull \hbox (201.89929pt too wide) in paragraph at lines 66--70
+\T1/lmr/m/n/10.95 The vul-ner-a-bil-ity is in-tro-duced via a Git patch: \T1/lm
+tt/m/n/10 XDPs/xdp_synproxy/patches/5_06d_argcomp/0001-feat-5.06d-wrong-argumen
+t-types.patch
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 66--70
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 87--87
+
+ []
+
+[35]
+Overfull \hbox (7.8547pt too wide) in paragraph at lines 100--104
+\T1/lmr/m/n/10.95 Command: \T1/lmtt/m/n/10 sudo bpftool prog load xdp_synproxy_
+kern.bpf.o /sys/fs/bpf/test_synproxy type
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 121--121
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 142--142
+[]\T1/lmtt/m/n/10.95 <idle>-0 [000] ..s2. 348.739616: bpf_trace_printk: [argcom
+p]: 5.6d - math
+ []
+
+[36]) (./sections/10_5_39_taintnoproto.tex
 Overfull \hbox (9.34279pt too wide) in paragraph at lines 1--1
 []\T1/lmr/bx/n/24.88 Vulnerability 5.39: Un-pro-to-typed 
  []
@@ -994,56 +1143,136 @@ Overfull \hbox (44.49931pt too wide) in paragraph at lines 1--1
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 59--59
+Underfull \hbox (badness 10000) in paragraph at lines 54--54
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 59--59
+Underfull \hbox (badness 10000) in paragraph at lines 54--54
+[] \T1/lmtt/m/n/10 s.array1[i] = 42; /*
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 54--54
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 59--59
+Underfull \hbox (badness 10000) in paragraph at lines 54--54
+
+ []
+
+[37]
+Overfull \hbox (343.64888pt too wide) in paragraph at lines 71--75
+\T1/lmr/m/n/10.95 The vul-ner-a-bil-ity is in-tro-duced via a Git patch: \T1/lm
+tt/m/n/10 XDPs/xdp_synproxy/patches/5_39_taintnoproto/0001-feat-5.39-taintnopro
+to_2-Tainted-potentially-mutilated.patch
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 71--75
+
+ []
+
+[38{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/d
+vips/lm/lm-mathsy.enc}]
+Overfull \hbox (7.8547pt too wide) in paragraph at lines 109--113
+\T1/lmr/m/n/10.95 Command: \T1/lmtt/m/n/10 sudo bpftool prog load xdp_synproxy_
+kern.bpf.o /sys/fs/bpf/test_synproxy type
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 131--131
+
+ []
+
+[39]) (./sections/11_5_46b_taintsink.tex [40]
+Underfull \hbox (badness 10000) in paragraph at lines 49--49
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 59--59
+Underfull \hbox (badness 10000) in paragraph at lines 49--49
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 59--59
+Overfull \hbox (317.39896pt too wide) in paragraph at lines 66--70
+\T1/lmr/m/n/10.95 The vul-ner-a-bil-ity is in-tro-duced via a Git patch: \T1/lm
+tt/m/n/10 XDPs/xdp_synproxy/patches/5_46b_taintsink/0001-feat-5.46-taintsink_2-
+Tainted-potentially-mutilated.patch
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 66--70
 
  []
 
-[35]
-Underfull \hbox (badness 10000) in paragraph at lines 90--90
-
+[41]
+Overfull \hbox (7.8547pt too wide) in paragraph at lines 97--101
+\T1/lmr/m/n/10.95 Command: \T1/lmtt/m/n/10 sudo bpftool prog load xdp_synproxy_
+kern.bpf.o /sys/fs/bpf/test_synproxy type
  []
 
-[36{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}]
-Underfull \hbox (badness 10000) in paragraph at lines 153--153
 
+Underfull \hbox (badness 10000) in paragraph at lines 146--146
+[]\T1/lmtt/m/n/10.95 <idle>-0 [000] ..s2. 348.737756: bpf_trace_printk: [taints
+ink]: Tainted
  []
 
-[37] [38]
+
+Underfull \hbox (badness 10000) in paragraph at lines 146--146
+\T1/lmtt/m/n/10.95 <idle>-0 [000] ..s2. 348.738659: bpf_trace_printk: [taintsin
+k]: Wrote
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 146--146
+\T1/lmtt/m/n/10.95 <idle>-0 [000] ..s2. 348.739616: bpf_trace_printk: [taintsin
+k]: Wrote
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 146--146
+\T1/lmtt/m/n/10.95 <idle>-0 [000] ..s2. 348.740573: bpf_trace_printk: [taintsin
+k]: Wrote
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 146--146
+\T1/lmtt/m/n/10.95 <idle>-0 [000] ..s2. 348.741530: bpf_trace_printk: [taintsin
+k]: Wrote
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 146--146
+\T1/lmtt/m/n/10.95 <idle>-0 [000] ..s2. 348.757486: bpf_trace_printk: [taintsin
+k]: Wrote
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 146--146
+\T1/lmtt/m/n/10.95 <idle>-0 [000] ..s2. 348.758443: bpf_trace_printk: [taintsin
+k]:
+ []
+
+[42] [43] [44] [45] [46]) (./sections/12_results_discussion.tex [47
+pdfTeX warning (ext4): destination with the same identifier (name{table.11.1}) 
+has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.31 \end{enumerate}
+                    
+pdfTeX warning (ext4): destination with the same identifier (name{table.12.1}) 
+has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.31 \end{enumerate}
+                    ]
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-) (./sections/11_5_46b_taintsink.tex [39]
-Underfull \hbox (badness 10000) in paragraph at lines 43--43
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 43--43
-
- []
-
-[40] [41] [42] [43] [44]) (./sections/12_results_discussion.tex [45] [46{/usr/s
-hare/texmf/fonts/enc/dvips/lm/lm-mathit.enc}]
+[48{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}]
 Overfull \hbox (50.24185pt too wide) in paragraph at lines 133--158
  [][] 
  []
@@ -1051,30 +1280,58 @@ Overfull \hbox (50.24185pt too wide) in paragraph at lines 133--158
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-) (./sections/13_limitations.tex [47] [48] [49]
+) (./sections/13_limitations.tex [49
+pdfTeX warning (ext4): destination with the same identifier (name{table.12.2}) 
+has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.9 
+    ] [50
+pdfTeX warning (ext4): destination with the same identifier (name{table.12.3}) 
+has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.29 \begin{enumerate}[label=\arabic*.]
+                                       ] [51]
 Overfull \hbox (4.03825pt too wide) in paragraph at lines 120--131
  [][] 
  []
 
-[50]) (./sections/14_conclusion.tex [51]
-Overfull \hbox (25.73163pt too wide) in paragraph at lines 58--69
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[52]) (./sections/14_conclusion.tex [53
+pdfTeX warning (ext4): destination with the same identifier (name{table.13.1}) 
+has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.30 \subsection
+                {Real Vulnerabilities Exist}]
+Overfull \hbox (92.39pt too wide) in paragraph at lines 58--69
  [][] 
  []
 
-[52]
+[54
+pdfTeX warning (ext4): destination with the same identifier (name{table.14.1}) 
+has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.84   \item U
+              ntrusted users can load eBPF programs (requires \texttt{CAP\_B...
+] [55]
 Overfull \hbox (32.69432pt too wide) in paragraph at lines 144--145
 []\T1/lmr/m/n/10.95 Disable eBPF en-tirely on sys-tems that don't re-quire it (
 \T1/lmtt/m/n/10.95 kernel.unprivileged_bpf_disabled=1\T1/lmr/m/n/10.95 ) 
  []
 
-[53] [54] [55]
+[56] [57] [58]
 Overfull \hbox (1.47154pt too wide) in paragraph at lines 275--276
 []\T1/lmr/m/n/10.95 For re-pro-duc-tion in-struc-tions and en-vi-ron-ment setup
 , see the main \T1/lmtt/m/n/10.95 README.md \T1/lmr/m/n/10.95 and \T1/lmtt/m/n/
 10.95 Makefile\T1/lmr/m/n/10.95 . 
  []
 
-) [56] (out/report.aux)
+) [59] (out/report.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-22>
@@ -1084,27 +1341,28 @@ L3 programming layer <2024-01-22>
 LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
 Package rerunfilecheck Info: File `report.out' has not changed.
-(rerunfilecheck)             Checksum: 02D67D63113371D091B02D5FF17640FB;41147.
+(rerunfilecheck)             Checksum: E8B6C3817F833EDF48849161787A2B44;47404.
  ) 
 Here is how much of TeX's memory you used:
- 23267 strings out of 476106
- 421728 string characters out of 5793933
+ 23362 strings out of 476106
+ 423356 string characters out of 5793933
  1944975 words of memory out of 5000000
- 44356 multiletter control sequences out of 15000+600000
+ 44443 multiletter control sequences out of 15000+600000
  625371 words of font info for 87 fonts, out of 8000000 for 9000
  59 hyphenation exceptions out of 8191
- 83i,10n,87p,1322b,582s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 83i,10n,87p,1761b,643s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texmf/fonts/type1/public/lm/lmbx10.pfb></usr/share/texmf/fonts/ty
 pe1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi10.pfb></u
 sr/share/texmf/fonts/type1/public/lm/lmr10.pfb></usr/share/texmf/fonts/type1/pu
 blic/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr17.pfb></usr/share
-/texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm
-/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt10.pfb></usr/share/texl
-ive/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb>
-Output written on out/report.pdf (57 pages, 760827 bytes).
+/texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/public/lm/l
+mri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf/
+fonts/type1/public/lm/lmtt10.pfb></usr/share/texlive/texmf-dist/fonts/type1/pub
+lic/amsfonts/symbols/msam10.pfb>
+Output written on out/report.pdf (60 pages, 795497 bytes).
 PDF statistics:
- 1698 PDF objects out of 1728 (max. 8388607)
- 1594 compressed objects within 16 object streams
- 488 named destinations out of 1000 (max. 500000)
- 1699 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 1773 PDF objects out of 2073 (max. 8388607)
+ 1663 compressed objects within 17 object streams
+ 492 named destinations out of 1000 (max. 500000)
+ 1811 words of extra memory for PDF output out of 10000 (max. 10000000)
 

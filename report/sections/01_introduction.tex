@@ -2,7 +2,7 @@
 
 \section{Motivation: From Theory to Practice}
 
-This project investigates the security boundaries of \textbf{eBPF} (extended Berkeley Packet Filter) by moving from \textbf{theoretical vulnerability identification} to \textbf{practical exploitation}. The fundamental question is: \textit{Do logic bugs in the eBPF verifier actually allow memory corruption and privilege escalation in real kernel execution?}
+This project investigates the security boundaries of \textbf{eBPF} (extended Berkeley Packet Filter) by moving from \textbf{theoretical vulnerability identification} to \textbf{practical exploitation}. The fundamental question is: \textit{Do logic bugs in the eBPF verifier allow memory corruption primitives, and if so, with what scope and real-world impact?} This includes distinguishing between eBPF-sandbox-limited corruption (DoS-capable but not kernel-level RCE (Remote Code Execution)) and packet-memory-limited corruption (bounds-checking gap but not privilege escalation).
 
 A previous research team conducted a comprehensive, rule-based assessment of the XDP SynProxy program using ISO-IEC TS 17961-2013 as the vulnerability catalog. They identified approximately 60 potential violations and classified roughly 9 as theoretically exploitable by analyzing the verifier's behavior under code patches. Their work established the foundation for this study but left a critical gap: theoretical analysis alone is insufficient to understand real-world impact. This work bridges that gap by implementing functional proof-of-concept exploits, collecting multi-stage evidence, and determining which verifier bypasses represent genuine memory corruption primitives versus harmless runtime behaviors.
 

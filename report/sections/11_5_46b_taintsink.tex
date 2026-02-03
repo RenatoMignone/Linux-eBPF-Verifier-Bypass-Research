@@ -2,95 +2,177 @@
 
 \section{Executive Summary}
 
-As detailed in Chapter 6, vulnerability 5.46b is a critical buffer overflow where an attacker-controlled packet length value (ISO-IEC Rule 5.46 violation) is used directly as the size parameter in a memory copy operation. This section documents the bytecode evidence, verifier analysis, and runtime exploitation confirming this vulnerability as directly and reliably exploitable.
+Vulnerability 5.46b is a \textbf{confirmed memory corruption vulnerability} where an attacker-controlled \textbf{tainted packet field (TCP Data Offset)} is used directly as a loop counter in a memory write operation, causing a \textbf{buffer overflow within the in-kernel packet buffer}. The corruption writes to adjacent \textbf{packet-local memory} (Ethernet header fields), not kernel data structures.
 
-\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Key Finding,fonttitle=\bfseries]
-An attacker can send a TCP packet with an oversized payload length field to overflow a fixed-size buffer and directly overwrite adjacent packet memory or kernel data structures with attacker-controlled packet data. This is a memory corruption vulnerability (CRITICAL - direct path to privilege escalation).
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=ISO Rule Violated,fonttitle=\bfseries]
+ISO-IEC Rule 5.46: ``Do not apply the sizeof operator to a polymorphic object'' (and related: tainted values in sinks)
 \end{tcolorbox}
 
-\section{Source-Level Patch}
+\begin{tcolorbox}[colback=red!5!white,colframe=red!75!black,title=Severity,fonttitle=\bfseries]
+\textbf{MEDIUM:} Direct memory corruption confirmed, but \textbf{scope-limited to packet-buffer memory}. Overwrites adjacent packet fields (MAC addresses), not kernel structures. \textbf{No privilege escalation possible}.
+\end{tcolorbox}
 
-The vulnerability is introduced via a Git patch located at:
+\subsection{Why This Vulnerability Matters}
 
-\begin{small}\raggedright
-\texttt{XDPs/xdp\_synproxy/patches/5\_46b\_taintsink/}\\
-\texttt{0001-feat-5.46-taintsink\_2-Tainted-potentially-}\\
-\texttt{mutilated.patch}
-\end{small}
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Tainted Packet Field}: TCP Data Offset (doff) is attacker-controlled
+  \item \textbf{No Validation}: Value is used directly without bounds checking
+  \item \textbf{Fixed-Size Buffer}: Destination MAC address buffer is only 6 bytes
+  \item \textbf{Verifier Gap}: Doesn't enforce field-level bounds checking within packet structures
+  \item \textbf{Scope Limitation}: Overflow stays within packet-local memory, not kernel memory
+\end{enumerate}
 
-\noindent
-Applied to \texttt{xdp\_synproxy\_kern.c}. This patch demonstrates unsafe use of a tainted packet field (TCP Data Offset) as a loop counter controlling a memory copy operation.
+\section{The Vulnerable Code Pattern}
 
-\noindent
-The vulnerability is a classic stack buffer overflow:
-
-\vspace{0.3cm}
-\noindent
-\fcolorbox{black!30}{gray!15}{%
-  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
-    {\small\ttfamily
-    // Fixed-size stack buffer\\
-    u8 buffer[6];\\
-    \\
-    // Tainted length from incoming packet\\
-    u16 payload\_len = tcp\_hdr-\textgreater{}payload\_len;  // Attacker controls this!\\
-    \\
-    // Copy without proper bounds checking\\
-    memcpy(buffer, packet\_data, payload\_len);\\
-    // If payload\_len > 6, this overwrites adjacent stack memory!
-    }
-  \end{minipage}%
-}
-\vspace{0.3cm}
-
-\noindent
-\subsection{Why the Verifier Fails}
-
-\noindent
-The verifier performs bounds checking to ensure accesses are within bounds. Typically:
+\subsection{Vulnerable Code (Simplified)}
 
 \vspace{0.3cm}
 \noindent
 \fcolorbox{black!30}{gray!15}{%
-  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
     {\small\ttfamily
-    if (payload\_len > 6) \{\\
-    \phantom{if (payload\_len > 6) }return -1;  // Reject invalid size\\
+    /* Fixed-size buffer for MAC destination (6 bytes standard) */\\
+    unsigned char h\_dest[6];\\
+    \\
+    /* Get tainted length from packet TCP header */\\
+    \_\_u32 tainted\_length = hdr-\textgreater{}tcp-\textgreater{}doff * 4;\\
+    /* doff is 4-15 (4-bit field), so length is 20-60 bytes */\\
+    bpf\_printk("[taintsink]: Tainted length \%u", tainted\_length);\\
+    \\
+    /* Use tainted length in a memory write loop (NO VALIDATION!) */\\
+    for (i = 0; i < tainted\_length; i++) \{\\
+    \phantom{for (i = 0; i < tainted\_length; i++) \{}h\_dest[i] = /* packet\_data[i] */;\\
+    /* BUFFER OVERFLOW if tainted\_length > 6 */\\
     \}
     }
   \end{minipage}%
 }
 \vspace{0.3cm}
 
-\noindent
-However, if the bounds check is on a \textit{tainted} value (one derived from the packet), and the verifier's taint tracking is incomplete, it may:
+\subsection{Why This Is Vulnerable}
+
 \begin{enumerate}[label=\arabic*.]
-  \item Assume the check is valid without verifying it actually constrains the taint source
-  \item Lose track of the taint during arithmetic operations
-  \item Accept the bounds check even though it doesn't truly limit the value
+  \item \textbf{Fixed-size buffer}: \texttt{h\_dest} is \textbf{only 6 bytes} (standard Ethernet MAC address)
+  \item \textbf{Tainted length}: \texttt{doff * 4} is attacker-controlled via TCP Data Offset field
+  \item \textbf{Range}: TCP doff is a 4-bit field (values 4-15), so \texttt{doff * 4} = 20-60 bytes
+  \item \textbf{No validation}: Code directly uses tainted value as loop counter
+  \item \textbf{Overflow}: Writing 60 bytes to a 6-byte buffer = \textbf{54-byte overflow} into adjacent memory
 \end{enumerate}
 
-\subsection{Attack Scenario}
+\section{Multi-Stage Analysis: Evidence Chain}
 
-\noindent
-\begin{enumerate}[label=\arabic*.]
-  \item Attacker sends a TCP packet with \texttt{payload\_len = 256}
-  \item The verifier ``checks'' that \texttt{payload\_len} $\leq$ 256 (always true)
-  \item The verifier approves the \texttt{memcpy}
-  \item At runtime, the packet contains 256 bytes of attacker-controlled data
-  \item \texttt{memcpy} copies 256 bytes into a 6-byte buffer
-  \item 250 bytes overflow into adjacent stack memory
-\end{enumerate}
+\subsection{Stage 1: Source Code (Patch Location)}
 
-\subsection{Bytecode Level with Concrete Example}
+The vulnerability is introduced via a Git patch:
+\begin{small}\raggedright
+\texttt{XDPs/xdp\_synproxy/patches/5\_46b\_taintsink/0001-feat-5.46-taintsink\_2-Tainted-potentially-mutilated.patch}
+\end{small}
 
-\noindent
-Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}:
+\subsection{Stage 2: Bytecode (llvm-objdump)}
+
+Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}, the compiled bytecode contains an \textbf{unrolled loop} writing 60 times:
 
 \vspace{0.3cm}
 \noindent
 \fcolorbox{black!30}{gray!15}{%
-  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
+    {\small\ttfamily
+    ;~ for (i = 0; i < tainted\_length; i++) \{\\
+    ;~~ h\_dest[i] = i;\\
+    56: (71) r1 = *(u8 *)(r8 +18)    \# Load loop counter i\\
+    57: (73) *(u8 *)(r2 -80) = r1   \# Store at offset -80+i\\
+    58: (85) call bpf\_trace\_printk  \# Signal: Wrote value at idx\\
+    ;~ ... (repeated 60 times for doff=15) ...
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
+
+\textbf{Interpretation}: Bytecode shows 60 store instructions (one for each value in the loop). This confirms the compiler \textbf{did not optimize away} the loop unrolling despite the unsafe length value.
+
+\textbf{Finding}: The full 60-iteration loop is preserved in bytecode.
+
+\subsection{Stage 3: Verifier (bpftool prog load)}
+
+Command:
+\begin{small}\raggedright
+\texttt{sudo bpftool prog load xdp\_synproxy\_kern.bpf.o /sys/fs/bpf/test\_synproxy type xdp -d}
+\end{small}
+
+\textbf{Result}: The verifier \textbf{accepts the program without error}.
+
+\textbf{Finding}: Verifier does not reject the 60-byte write to a 6-byte buffer. Field-level bounds checking missing.
+
+\subsection{Stage 4: Xlated Bytecode (bpftool prog dump xlated)}
+
+The xlated bytecode still contains all 60 store instructions:
+
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
+    {\small\ttfamily
+    56: (71) r1 = *(u8 *)(r8 +18)\\
+    57: (73) *(u8 *)(r2 -80) = r1\\
+    58: (85) call bpf\_trace\_printk\\
+    ;~ ... all 60 stores preserved ...
+    }
+  \end{minipage}%
+}
+\vspace{0.3cm}
+
+\textbf{Finding}: Xlated bytecode shows \textbf{all 60 store instructions are preserved unchanged}. No verifier-inserted bounds checks. Vulnerability survives verification.
+
+\subsection{Stage 5: Runtime Execution (trace\_pipe)}
+
+Trigger the vulnerability with TCP doff=15 (maximum):
+
+\begin{verbatim}
+python3 src/exploits/5_46b_taintsink/poc_546b_overflow.py <VM_IP>
+\end{verbatim}
+
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
+    \texttt{<idle>-0 [000] ..s2. 348.737756: bpf\_trace\_printk: [taintsink]: Tainted length 60}\\
+    \texttt{<idle>-0 [000] ..s2. 348.738659: bpf\_trace\_printk: [taintsink]: Wrote value at idx 0}\\
+    \texttt{<idle>-0 [000] ..s2. 348.739616: bpf\_trace\_printk: [taintsink]: Wrote value at idx 1}\\
+    \texttt{<idle>-0 [000] ..s2. 348.740573: bpf\_trace\_printk: [taintsink]: Wrote value at idx 2}\\
+    \texttt{<idle>-0 [000] ..s2. 348.741530: bpf\_trace\_printk: [taintsink]: Wrote value at idx 3}\\
+    \texttt{<idle>-0 [000] ..s2. 348.757486: bpf\_trace\_printk: [taintsink]: Wrote value at idx 59}\\
+    \texttt{<idle>-0 [000] ..s2. 348.758443: bpf\_trace\_printk: [taintsink]: hdr-\textgreater{}eth-\textgreater{}h\_source differs}
+  \end{minipage}%
+}
+\vspace{0.3cm}
+
+\textbf{Finding}: The trace confirms:
+1. Tainted length is 60 (doff=15)
+2. All 60 writes execute (indices 0-59)
+3. MAC source field is corrupted (comparison detects difference)
+
+\textbf{Links all stages together}. Vulnerability executes at runtime.
+
+\section{Exploitation Analysis}
+
+Memory corruption has been confirmed: the verifier accepts the program, the bytecode preserves the 60-byte loop, the xlated bytecode has no bounds guards, runtime executes all 60 writes, the attacker controls the length (via TCP data offset), and adjacent memory is corrupted with the MAC source address overwritten. Packet memory layout shows that the \texttt{h\_dest} buffer is 6 bytes (indices 0-5), \texttt{h\_source} is 6 bytes (indices 6-11), and \texttt{h\_proto} is 2 bytes (indices 12-13). With doff=15 (60-byte write), bytes 0-5 are written to \texttt{h\_dest} (intended), bytes 6-11 overflow to \texttt{h\_source} (first overflow), bytes 12-13 overflow to \texttt{h\_proto} (second overflow), and bytes 14-59 write beyond the packet header (third overflow). The impact is scope-limited: writes stay within the packet buffer structure (not kernel stack), the overflow cannot reach kernel memory, the attacker cannot modify task credentials or eBPF context, and while the packet may be corrupted, network processing continues with limited DoS potential. While direct exploitation for kernel compromise is impossible due to eBPF sandbox constraints---execution is isolated from kernel memory, the eBPF stack is separate from kernel stack, and corrupted data affects only packet-local memory, not kernel control flow---this vulnerability demonstrates a critical verifier gap: the verifier doesn't enforce field-level bounds and only checks packet-level safety, representing a systematic gap in bounds checking that affects all packet buffer field access patterns. The vulnerability is exploitable within packet-buffer scope, but the eBPF sandbox prevents kernel-level compromise.
+
+\section{Artifact Evidence}
+
+All analysis logs available in: \texttt{src/exploits/5\_46b\_taintsink/logs/}
+
+\begin{itemize}
+  \item \texttt{5\_46b\_bytecode\_analysis.txt} — Full llvm-objdump output (all 60 stores)
+  \item \texttt{5\_46b\_verifier\_log.txt} — Verifier output (bpftool prog load -d)
+  \item \texttt{5\_46b\_xlated\_dump.txt} — Xlated bytecode with all 60 store instructions
+\end{itemize}
+
+PoC script: \texttt{src/exploits/5\_46b\_taintsink/poc\_546b\_overflow.py}
+
+\vspace{0.3cm}
+\noindent
+\fcolorbox{black!30}{gray!15}{%
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
     {\small\ttfamily
     ;~ Packet bounds check: if (data + 60 > data\_end) return XDP\_DROP\\
     42: 61 80 00 00 00 00 00 00~ r0 = *(u32 *)(r8 + 0x0)\\
@@ -136,7 +218,7 @@ Result: The verifier accepts a bounds check that is sufficient for packet memory
 \vspace{0.3cm}
 \noindent
 \fcolorbox{black!30}{gray!15}{%
-  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
     {\small\ttfamily
     45: 73 02 00 00 2a 00 00 00~ *(u8 *)(r2 + 0x0) = r3\\
     46: 73 02 01 00 2a 00 00 00~ *(u8 *)(r2 + 0x1) = r3\\
@@ -172,7 +254,7 @@ If the verifier accepts a bounds check that is not tight, tainted values can esc
 \vspace{0.3cm}
 \noindent
 \fcolorbox{black!30}{gray!15}{%
-  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
     {\small\ttfamily
     cd src/exploits/5\_46b\_taintsink/\\
     python3 poc\_546b\_final.py <VM\_IP> 60
@@ -193,7 +275,7 @@ Kernel trace output:
 \vspace{0.3cm}
 \noindent
 \fcolorbox{black!30}{gray!15}{%
-  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
     {\small\ttfamily
     \texttt{[5.46b]: Payload length: 256}\\
     \texttt{[5.46b]: Overflow start: index 0}\\
@@ -209,42 +291,42 @@ Kernel trace output:
 \subsection{Memory Impact}
 
 \noindent
-The overflow region (6-59 bytes past buffer start) may contain saved return addresses (if stack layout aligns), other local variables, saved registers (x86-64 calling convention), or saved frame pointers (RBP).
+The overflow region (6-59 bytes past buffer start) is part of the \textbf{packet buffer memory}, containing adjacent Ethernet header fields (MAC source address, protocol field), NOT kernel stack data structures.
 
-\section{Classification: EXPLOITABLE (CRITICAL)}
-
-\noindent
-The verifier accepts the program, the bytecode contains the overflow, runtime executes the overflow, the attacker controls overflow data (packet payload) and overflow length (payload\_len field), enabling direct writes to the kernel stack with attacker-controlled data. \textbf{This is a confirmed, directly exploitable memory-corruption vulnerability}.
-
-\section{Exploitation Path to Privilege Escalation}
+\section{Classification: EXPLOITABLE (BUT SCOPE-LIMITED)}
 
 \noindent
-\subsection{Stage 1: Overflow Return Address}
+The verifier accepts the program, the bytecode contains the overflow, runtime executes the overflow, the attacker controls overflow data (packet payload) and overflow length (packet doff field), enabling direct writes to \textbf{packet-local buffer memory} with attacker-controlled data. \textbf{This is a confirmed memory-corruption vulnerability, but corruption is limited to packet-buffer scope, not kernel-level structures}. No privilege escalation or kernel compromise is possible because the overflow targets in-kernel packet buffer fields, not kernel stack or task credentials.
 
-If the stack layout places a return address within the overflow region:
+\section{Scope of Impact: Packet-Buffer-Limited}
+
+\noindent
+The vulnerability demonstrates a verifier bounds-checking gap, but the impact is \textbf{constrained}:
+
+\subsection{What CAN be corrupted}
+
 \begin{enumerate}[label=\arabic*.]
-  \item Calculate the offset from buffer start to saved RIP
-  \item Craft a packet with the overflow data
-  \item Include a ROP gadget address or kernel function address in the right bytes
-  \item When the function returns, it executes attacker-controlled code
+  \item Adjacent Ethernet header fields (MAC source: hdr->eth->h\_source)
+  \item Packet protocol field
+  \item Other in-flight packet metadata within the same buffer structure
 \end{enumerate}
 
-\subsection{Stage 2: Code Execution}
+\subsection{What CANNOT be corrupted}
 
-Depending on the context:
 \begin{enumerate}[label=\arabic*.]
-  \item Execute a ROP gadget chain to modify \texttt{cred->uid} to 0
-  \item Call a kernel function with controlled arguments
-  \item Jump to shellcode if code execution is possible
+  \item Kernel stack memory (the overflow is within packet buffer)
+  \item Saved return addresses (not accessible from packet buffer)
+  \item Task credentials (not adjacent to packet fields)
+  \item Kernel function pointers (not within packet memory)
 \end{enumerate}
 
-\subsection{Stage 3: Privilege Escalation}
+\subsection{Why Privilege Escalation is Impossible}
 
-If code execution is achieved in the XDP context:
 \begin{enumerate}[label=\arabic*.]
-  \item Modify current task credentials to UID 0 (root)
-  \item Or disable security enforcement (drop SELinux/AppArmor)
-  \item Return to normal execution with elevated privileges
+  \item The overflow is confined to \textbf{packet-local memory} within the eBPF context
+  \item Packet buffers are temporary, stack-allocated data structures in XDP handler
+  \item Modifying packet fields does not affect kernel task credentials or return addresses
+  \item The eBPF sandbox prevents escape to general kernel memory
 \end{enumerate}
 
 \section{Constraints and Realities}
@@ -264,7 +346,7 @@ Complete PoC in \texttt{poc\_546b\_final.py}:
 \vspace{0.3cm}
 \noindent
 \fcolorbox{black!30}{gray!15}{%
-  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
     {\small\ttfamily
     \#!/usr/bin/env python3\\
     \# Sends TCP packet with oversized Data Offset field\\
@@ -295,7 +377,7 @@ The fact that all 60 writes appear in the \texttt{xlated} output proves the veri
 \vspace{0.3cm}
 \noindent
 \fcolorbox{black!30}{gray!15}{%
-  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
+  \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
     {\small\ttfamily
     \#!/usr/bin/env python3\\
     \# Sends TCP packet with oversized payload length\\

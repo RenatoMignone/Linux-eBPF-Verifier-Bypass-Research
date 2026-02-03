@@ -51,13 +51,13 @@ The classification of 5.39 and 5.46b as exploitable is based on:
   \item Potential to overwrite critical kernel structures
 \end{enumerate}
 
-However, an end-to-end exploit to privilege escalation was not demonstrated in this report. The limitation is:
+However, the scope of the vulnerabilities is strictly limited:
 \begin{itemize}
-  \item Exploitation requires additional context-specific knowledge (stack layout, ROP gadgets)
-  \item Some assumptions (e.g., return address location) were not exhaustively verified
+  \item \textbf{5.39}: Corruption is confined to \textbf{eBPF-local stack frame} (within XDP handler context); RCE (Remote Code Execution) is impossible due to sandbox isolation
+  \item \textbf{5.46b}: Corruption is confined to \textbf{packet-buffer memory} (adjacent Ethernet fields); kernel compromise is impossible because overflow targets packet data, not kernel structures
 \end{itemize}
 
-\textbf{Confidence level}: Very high that the vulnerabilities exist and are memory-corrupting; high (but not absolute certainty) that full privilege escalation is achievable with additional work.
+\textbf{Confidence level}: Very high that the vulnerabilities exist as memory-corrupting primitives; \textbf{zero confidence} that privilege escalation to kernel is achievable, because the scope limitations (eBPF sandbox for 5.39, packet-buffer isolation for 5.46b) prevent kernel-level exploitation.
 
 \subsection{PoC Reliability}
 
