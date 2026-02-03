@@ -50,7 +50,7 @@ ISO-IEC Rule 5.06: ``For a call to a function without a function prototype in sc
 \subsection{Why This Is Vulnerable}
 
 \begin{enumerate}[label=\arabic*.]
-  \item \textbf{Forward declaration}: Has \textbf{no parameter list} — `()` means unknown arity
+  \item \textbf{Forward declaration}: Has \textbf{no parameter list}, `()` means unknown arity
   \item \textbf{Called with 3 arguments}: Passes values in R1, R2, R3
   \item \textbf{Function expects 2}: Only consumes R1 and R2
   \item \textbf{Verifier gap}: Doesn't check that argument count matches; only validates memory safety
@@ -157,9 +157,9 @@ At runtime, an extra argument is passed in R3 (caller setup), but the function c
 All analysis logs are available in: \texttt{src/exploits/5\_06b\_argcomp/logs/}
 
 \begin{itemize}
-  \item \texttt{5\_06b\_bytecode\_analysis.txt} — Full llvm-objdump output
-  \item \texttt{5\_06b\_verifier\_log.txt} — Verifier output (bpftool prog load -d)
-  \item \texttt{5\_06b\_xlated\_dump.txt} — Xlated bytecode (verifier-processed)
+  \item \texttt{5\_06b\_bytecode\_analysis.txt}, Full llvm-objdump output
+  \item \texttt{5\_06b\_verifier\_log.txt}, Verifier output (bpftool prog load -d)
+  \item \texttt{5\_06b\_xlated\_dump.txt}, Xlated bytecode (verifier-processed)
 \end{itemize}
 
 \noindent

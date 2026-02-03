@@ -2,7 +2,7 @@
 
 \section{Executive Summary}
 
-Vulnerability 5.39 is a \textbf{confirmed memory corruption vulnerability} combining an unprototyped function pointer (ISO-IEC Rule 5.39 violation) with a \textbf{tainted array index derived from the TCP sequence number}, enabling \textbf{out-of-bounds writes to the eBPF-local stack frame}. This is directly exploitable but \textbf{sandbox-limited} — corruption cannot escape the eBPF context to compromise the kernel.
+Vulnerability 5.39 is a \textbf{confirmed memory corruption vulnerability} combining an unprototyped function pointer (ISO-IEC Rule 5.39 violation) with a \textbf{tainted array index derived from the TCP sequence number}, enabling \textbf{out-of-bounds writes to the eBPF-local stack frame}. This is directly exploitable but \textbf{sandbox-limited}, corruption cannot escape the eBPF context to compromise the kernel.
 
 \begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=ISO Rule Violated,fonttitle=\bfseries]
 ISO-IEC Rule 5.39: ``Do not create pointers to functions with an implicit return type''
@@ -57,7 +57,7 @@ ISO-IEC Rule 5.39: ``Do not create pointers to functions with an implicit return
 \subsection{Why This Is Vulnerable}
 
 \begin{enumerate}[label=\arabic*.]
-  \item \textbf{Unprototyped pointer}: `void (*pf)()` — No parameter type info, verifier can't track argument constraints
+  \item \textbf{Unprototyped pointer}: `void (*pf)()`, No parameter type info, verifier can't track argument constraints
   \item \textbf{Tainted input}: TCP sequence number is attacker-controlled (values 0-$2^{32}-1$)
   \item \textbf{Division doesn't constrain}: `seq / 1000` is still unbounded (0-4,294,967)
   \item \textbf{Array size is 16}: Accessing array1[16+] writes beyond buffer into adjacent stack memory
@@ -69,9 +69,10 @@ ISO-IEC Rule 5.39: ``Do not create pointers to functions with an implicit return
 \subsection{Stage 1: Source Code (Patch Location)}
 
 The vulnerability is introduced via a Git patch:
-\begin{small}\raggedright
-\texttt{XDPs/xdp\_synproxy/patches/5\_39\_taintnoproto/0001-feat-5.39-taintnoproto\_2-Tainted-potentially-mutilated.patch}
-\end{small}
+\begin{tcolorbox}[colback=gray!10, colframe=gray!10, arc=2pt, boxrule=0pt]
+\small\ttfamily
+\texttt{XDPs/xdp\_synproxy/patches/5\_39\_taintnoproto/0001-feat-5.39-taintnoproto*.patch}
+\end{tcolorbox}
 
 \subsection{Stage 2: Bytecode (llvm-objdump)}
 
@@ -96,23 +97,28 @@ Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}:
 }
 \vspace{0.3cm}
 
+\noindent
 \textbf{Interpretation}:
 - R3 is loaded from packet (line 139-141)
 - No bounds check on R3
 - Store instruction uses R3 as an offset (line 149)
 - If R3 $\geq$ 16, this writes beyond the array buffer
 
+\noindent
 \textbf{Finding}: Bytecode shows the unprototyped call with tainted index. Not optimized away.
 
 \subsection{Stage 3: Verifier (bpftool prog load)}
 
 Command:
-\begin{small}\raggedright
+\begin{tcolorbox}[colback=gray!10, colframe=gray!10, arc=2pt, boxrule=0pt]
+\small\ttfamily
 \texttt{sudo bpftool prog load xdp\_synproxy\_kern.bpf.o /sys/fs/bpf/test\_synproxy type xdp -d}
-\end{small}
+\end{tcolorbox}
 
+\noindent
 \textbf{Result}: The verifier \textbf{accepts the program without error}.
 
+\noindent
 \textbf{Finding}: No rejection for the tainted array index. The unprototyped function call breaks taint tracking.
 
 \subsection{Stage 4: Xlated Bytecode (bpftool prog dump xlated)}
@@ -131,16 +137,19 @@ Command:
 }
 \vspace{0.3cm}
 
+\noindent
 \textbf{Finding}: The xlated bytecode is nearly identical to compiled bytecode. \textbf{No bounds check inserted}. The vulnerable store survives verification unchanged.
 
 \subsection{Stage 5: Runtime Execution (trace\_pipe)}
 
 Trigger the vulnerability:
 
-\begin{verbatim}
-python3 src/exploits/5_39_taintnoproto/poc_539_exploit.py <VM_IP>
-\end{verbatim}
+\begin{tcolorbox}[colback=gray!10, colframe=gray!10, arc=2pt, boxrule=0pt]
+\small\ttfamily
+python3 src/exploits/5\_39\_taintnoproto/poc\_539\_exploit.py 
+\end{tcolorbox}
 
+\noindent
 Kernel trace output:
 
 \vspace{0.3cm}
@@ -159,21 +168,31 @@ Kernel trace output:
 }
 \vspace{0.3cm}
 
+\noindent
 \textbf{Finding}: The trace shows indices 16, 17, 25 (all $\geq$ 16, causing OOB writes) and confirms the write value (42). \textbf{Links all stages together}. Vulnerability executes at runtime.
 
 \section{Exploitation Analysis}
+\textbf{Memory corruption has been confirmed}: the verifier accepts the program, the bytecode preserves the vulnerability, the xlated bytecode has no guards, runtime executes \textbf{out-of-bounds writes}, the attacker controls the \textbf{index} (via TCP sequence number), and the attacker controls the \textbf{write value} (fixed at 0x42). 
 
-Memory corruption has been confirmed: the verifier accepts the program, the bytecode preserves the vulnerability, the xlated bytecode has no guards, runtime executes out-of-bounds writes, the attacker controls the index (via TCP sequence number), and the attacker controls the write value (fixed at 0x42). The `array1[16]` buffer is only 16 bytes (indices 0-15 valid), so writing to indices 16-25 overwrites 10 bytes of adjacent memory into `array2[0-9]`, modifying adjacent eBPF-local variables. For example, index 25 with value 0x42 writes to offset 25, corrupting 10 bytes into adjacent memory. The vulnerability can crash the XDP handler via corrupted stack frame, cause kernel panic if corruption affects critical control structures, or disable network processing on the interface, and it is reliable because the attacker controls the index value (TCP sequence number), any SYN packet can trigger it, and multiple packets can trigger multiple OOB writes. However, privilege escalation is impossible due to eBPF sandbox constraints: execution is isolated from kernel memory, the eBPF stack is separate from kernel stack, and corrupted return addresses affect only the eBPF execution context (not kernel), so memory corruption is \textbf{eBPF-local only} and not kernel-level compromise.
+\noindent
+The `array1[16]` buffer is only \textbf{16 bytes} (indices 0-15 valid), so writing to indices 16-25 \textbf{overwrites 10 bytes of adjacent memory} into `array2[0-9]`, modifying adjacent eBPF-local variables. For example, index 25 with value 0x42 writes to offset 25, corrupting 10 bytes into adjacent memory. 
+
+\noindent
+The vulnerability can \textbf{crash the XDP handler} via corrupted stack frame, cause \textbf{kernel panic} if corruption affects critical control structures, or \textbf{disable network processing} on the interface, and it is \textbf{reliable} because the attacker controls the index value (TCP sequence number), any SYN packet can trigger it, and multiple packets can trigger multiple OOB writes. 
+\vspace{0.3cm}
+\\
+However, \textbf{privilege escalation is impossible} due to \textbf{eBPF sandbox constraints}: execution is isolated from kernel memory, the eBPF stack is separate from kernel stack, and corrupted return addresses affect only the eBPF execution context (not kernel), so memory corruption is \textbf{eBPF-local only} and not kernel-level compromise.
 
 \section{Artifact Evidence}
 
 All analysis logs available in: \texttt{src/exploits/5\_39\_taintnoproto/logs/}
 
 \begin{itemize}
-  \item \texttt{5\_39\_bytecode\_analysis.txt} — Full llvm-objdump output
-  \item \texttt{5\_39\_verifier\_log.txt} — Verifier output (bpftool prog load -d)
-  \item \texttt{5\_39\_xlated\_dump.txt} — Xlated bytecode (verifier-processed)
+  \item \texttt{5\_39\_bytecode\_analysis.txt}, Full llvm-objdump output
+  \item \texttt{5\_39\_verifier\_log.txt}, Verifier output (bpftool prog load -d)
+  \item \texttt{5\_39\_xlated\_dump.txt}, Xlated bytecode (verifier-processed)
 \end{itemize}
 
+\noindent
 PoC script: \texttt{src/exploits/5\_39\_taintnoproto/poc\_539\_exploit.py}
 

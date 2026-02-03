@@ -2,7 +2,7 @@
 
 \section{Executive Summary}
 
-Vulnerability 5.06d is an ABI (Application Binary Interface) mismatch where a function is called with \textbf{mismatched argument types} — a 16-bit value is passed where a 64-bit value is expected. This violates ISO-IEC Rule 5.06 and represents a \textbf{type confusion} that could lead to memory corruption if the mismatched value is used for pointer arithmetic or size calculations.
+Vulnerability 5.06d is an ABI (Application Binary Interface) mismatch where a function is called with \textbf{mismatched argument types}, a 16-bit value is passed where a 64-bit value is expected. This violates ISO-IEC Rule 5.06 and represents a \textbf{type confusion} that could lead to memory corruption if the mismatched value is used for pointer arithmetic or size calculations.
 
 \begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=ISO Rule Violated,fonttitle=\bfseries]
 ISO-IEC Rule 5.06: ``Expression that denotes the called function is not type-compatible with the function definition''
@@ -52,8 +52,8 @@ ISO-IEC Rule 5.06: ``Expression that denotes the called function is not type-com
 
 \begin{enumerate}[label=\arabic*.]
   \item \textbf{16-bit TCP window} is loaded from packet into R1
-  \item \textbf{Type casting to int} (32-bit) — only lower bits valid, upper bits garbage
-  \item \textbf{Function expects long} (64-bit) — expects full 64-bit register value
+  \item \textbf{Type casting to int} (32-bit), only lower bits valid, upper bits garbage
+  \item \textbf{Function expects long} (64-bit), expects full 64-bit register value
   \item \textbf{No sign/zero-extension}: Compiler doesn't insert bounds conversion
   \item \textbf{Verifier accepts}: Doesn't validate type width compatibility
   \item \textbf{Result}: Function receives contaminated value with uninitialized upper bits
@@ -64,9 +64,10 @@ ISO-IEC Rule 5.06: ``Expression that denotes the called function is not type-com
 \subsection{Stage 1: Source Code (Patch Location)}
 
 The vulnerability is introduced via a Git patch:
-\begin{small}\raggedright
+\begin{tcolorbox}[colback=gray!10, colframe=gray!10, arc=2pt, boxrule=0pt]
+\small\ttfamily
 \texttt{XDPs/xdp\_synproxy/patches/5\_06d\_argcomp/0001-feat-5.06d-wrong-argument-types.patch}
-\end{small}
+\end{tcolorbox}
 
 \subsection{Stage 2: Bytecode (llvm-objdump)}
 
@@ -87,23 +88,32 @@ Using \texttt{llvm-objdump -S xdp\_synproxy\_kern.o}:
 }
 \vspace{0.3cm}
 
+\noindent
 \textbf{Interpretation}: 
-- Line 53: Load 16-bit TCP window field
-- Line 54: Convert from big-endian to native endian
-- Line 55: \textbf{Call function with 16-bit value in a 64-bit register}
-- \textbf{Critical}: Only lower 16 bits are initialized; upper 48 bits are garbage
+\begin{itemize}
+  \item Line 53: Load 16-bit TCP window field into R1
+  \item Line 54: Convert from big-endian to native endian
+  \item Line 55: Call helper function with R1 as argument
+\end{itemize}
 
+\noindent
+\textbf{Critical}: Only lower 16 bits are initialized; upper 48 bits are garbage
+
+\noindent
 \textbf{Finding}: Bytecode shows the 16-bit load followed by the function call. No zero-extension or sign-extension instructions. The 48-bit garbage survives compilation.
 
 \subsection{Stage 3: Verifier (bpftool prog load)}
 
 Command:
-\begin{small}\raggedright
+\begin{tcolorbox}[colback=gray!10, colframe=gray!10, arc=2pt, boxrule=0pt]
+\small\ttfamily
 \texttt{sudo bpftool prog load xdp\_synproxy\_kern.bpf.o /sys/fs/bpf/test\_synproxy type xdp -d}
-\end{small}
+\end{tcolorbox}
 
+\noindent
 \textbf{Result}: The verifier \textbf{accepts the program without error}.
 
+\noindent
 \textbf{Finding}: No type mismatch detected. Verifier does not validate type width matching for function arguments.
 
 \subsection{Stage 4: Xlated Bytecode (bpftool prog dump xlated)}
@@ -121,16 +131,19 @@ Command:
 }
 \vspace{0.3cm}
 
+\noindent
 \textbf{Finding}: Xlated bytecode is identical to compiled bytecode. \textbf{No bounds guards inserted}. The type mismatch survives verification unchanged.
 
 \subsection{Stage 5: Runtime Execution (trace\_pipe)}
 
 Trigger the vulnerability:
 
-\begin{verbatim}
-python3 src/exploits/5_06d_argcomp/exploit_506d.py <VM_IP>
-\end{verbatim}
+\begin{tcolorbox}[colback=gray!10, colframe=gray!10, arc=2pt, boxrule=0pt]
+\small\ttfamily
+python3 src/exploits/5\_06d\_argcomp/exploit\_506d.py
+\end{tcolorbox}
 
+\noindent
 Kernel trace output:
 
 \vspace{0.3cm}
@@ -142,6 +155,7 @@ Kernel trace output:
 }
 \vspace{0.3cm}
 
+\noindent
 \textbf{Finding}: The trace shows `8192` (typical TCP window size). The computation completes despite the type mismatch, \textbf{linking all stages together}. Code executes at runtime with contaminated value.
 
 \section{Exploitation Analysis}
@@ -153,9 +167,10 @@ At runtime, the TCP window field (16-bit) is loaded into R1, and the upper 48 bi
 All analysis logs are available in: \texttt{src/exploits/5\_06d\_argcomp/logs/}
 
 \begin{itemize}
-  \item \texttt{5\_06d\_bytecode\_analysis.txt} — Full llvm-objdump output
-  \item \texttt{5\_06d\_verifier\_log.txt} — Verifier output (bpftool prog load -d)
-  \item \texttt{5\_06d\_xlated\_dump.txt} — Xlated bytecode (verifier-processed)
+  \item \texttt{5\_06d\_bytecode\_analysis.txt}, Full llvm-objdump output
+  \item \texttt{5\_06d\_verifier\_log.txt}, Verifier output (bpftool prog load -d)
+  \item \texttt{5\_06d\_xlated\_dump.txt}, Xlated bytecode (verifier-processed)
 \end{itemize}
 
+\noindent
 PoC script: \texttt{src/exploits/5\_06d\_argcomp/exploit\_506d.py}
