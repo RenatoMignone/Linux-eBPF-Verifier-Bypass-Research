@@ -4,10 +4,15 @@
 
 This project investigates the security boundaries of \textbf{eBPF} (extended Berkeley Packet Filter) by moving from \textbf{theoretical vulnerability identification} to \textbf{practical exploitation}. The fundamental question is: \textit{Do logic bugs in the eBPF verifier allow memory corruption primitives, and if so, with what scope and real-world impact?} This includes distinguishing between eBPF-sandbox-limited corruption (DoS-capable but not kernel-level RCE (Remote Code Execution)) and packet-memory-limited corruption (bounds-checking gap but not privilege escalation).
 
+\vspace{0.3cm}
+\noindent
 A previous research team conducted a comprehensive, rule-based assessment of the XDP SynProxy program using ISO-IEC TS 17961-2013 as the vulnerability catalog. They identified approximately 60 potential violations and classified roughly 9 as theoretically exploitable by analyzing the verifier's behavior under code patches. Their work established the foundation for this study but left a critical gap: theoretical analysis alone is insufficient to understand real-world impact. This work bridges that gap by implementing functional proof-of-concept exploits, collecting multi-stage evidence, and determining which verifier bypasses represent genuine memory corruption primitives versus harmless runtime behaviors.
 
+\vspace{0.3cm}
+\noindent
 Building on the previous team's infrastructure and vulnerability catalog, we extended the testing environment with external-perspective exploitation capability, allowing attacks to be launched from the host machine against the target VM's network interface. This enhancement transforms the assessment from local-only testing into a realistic network-adjacent attack scenario. Additionally, we modified the VM provisioning scripts and network configuration to support shared file system access (via host-to-VM mount) and bridged networking, streamlining the exploit deployment and testing workflow.
 
+\noindent
 The transition from theoretical to practical work requires:
 \begin{enumerate}[label=\arabic*.]
   \item Engineering functional \textbf{Proofs of Concept (PoCs)} that trigger vulnerabilities through network packets
@@ -21,7 +26,7 @@ The transition from theoretical to practical work requires:
 
 This work focuses on five selected vulnerabilities, chosen because they represent critical classes of verifier failures:
 
-\begin{table}[h]
+\begin{table}[h!]
 \centering
 \begin{tabular}{|c|l|l|}
 \hline
@@ -37,6 +42,7 @@ This work focuses on five selected vulnerabilities, chosen because they represen
 \caption{Selected vulnerabilities for practical exploitation study}
 \end{table}
 
+\noindent
 The objectives are to:
 \begin{itemize}
   \item Demonstrate which verifier bypasses lead to observable runtime effects

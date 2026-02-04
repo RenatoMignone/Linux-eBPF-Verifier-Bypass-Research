@@ -12,14 +12,43 @@
 
 This project explores the security boundaries of **eBPF (extended Berkeley Packet Filter)**, a revolutionary technology that allows user-defined programs to run safely inside the Linux kernel. While eBPF's verifier is designed to guarantee memory safety and prevent malicious code execution, certain logic bugs can potentially bypass these protections.
 
-The work is structured in three phases:
-1. **Understanding eBPF** — A comprehensive introduction to eBPF architecture, its verifier, and why it matters for kernel security.
-2. **Prior Theoretical Assessment** — Analysis of inherited work from a previous team who identified 60+ potential vulnerabilities based on ISO-IEC TS 17961-2013, classifying ~10 as theoretically exploitable.
-3. **Practical Exploitation** — Engineering functional Proofs of Concept (PoCs) that demonstrate real kernel impact on LTS 6.8.
-
 ---
 
-## Table of Contents
+## 📚 README Hierarchy & Navigation
+
+This project is documented across multiple README files organized hierarchically. Start here and follow the breadcrumbs to dive deeper:
+
+```
+├── README.md (you are here)
+│   ├─ Explains: eBPF fundamentals, verifier concepts, threat model, inherited work
+│   ├─ Audience: Readers unfamiliar with eBPF or the project context
+│   └─ Next: See "My Objective: Practical Exploitation" section below, then proceed to src/README.md
+│
+├── src/README.md
+│   ├─ Explains: Exploitation workflow, VM setup, compilation pipeline, overall methodology
+│   ├─ Audience: Readers ready to understand the practical approach and environment
+│   └─ Next: Proceed to src/exploits/README.md for detailed vulnerability analysis
+│
+├── src/exploits/README.md
+│   ├─ Explains: Multi-stage analysis methodology (bytecode → verifier → xlated → runtime)
+│   ├─ Explains: 5 vulnerabilities with evidence chains and classification
+│   ├─ Audience: Readers interested in the analysis approach and vulnerability summaries
+│   └─ Next: Drill into individual vulnerabilities (5_06a, 5_06b, 5_06d, 5_39, 5_46b)
+│
+└── src/exploits/{vulnerability}/README.md (one per vulnerability)
+    ├─ Explains: Deep technical analysis, bytecode dumps, verifier logs, exploitation mechanics
+    ├─ Explains: Complete evidence chain from source code to runtime traces
+    ├─ Audience: Readers performing detailed technical analysis or reproducing exploits
+    └─ Files: Specific PoC scripts, patch files, analysis logs
+```
+
+**Quick Navigation:**
+- **Just want overview?** → Read this file (root README.md)
+- **Want to run the exploits?** → Jump to [src/README.md](src/README.md)
+- **Want methodology & analysis?** → See [src/exploits/README.md](src/exploits/README.md)
+- **Analyzing specific vulnerability?** → See [src/exploits/{vulnerability}/README.md](src/exploits/) folder
+
+---
 
 1. [What is eBPF?](#what-is-ebpf)
    - [Origins and Evolution](#origins-and-evolution)
@@ -1098,3 +1127,11 @@ The following vulnerabilities are the primary focus for practical exploitation i
 - **5.6d argcomp** — Wrong argument types
 - **5.39 taintnoproto** — Using tainted values as function pointers without prototypes
 - **5.46b taintsink** — Memory copy with tainted length
+
+---
+
+## 📖 Next Steps
+
+Now that you understand the context and objectives, proceed to the practical exploitation documentation:
+
+**→ [Continue to src/README.md](src/README.md)** to learn about the exploitation workflow, environment setup, and overall methodology.

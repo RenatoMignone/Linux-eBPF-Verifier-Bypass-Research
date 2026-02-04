@@ -31,14 +31,12 @@ The primary objective is to exploit eBPF verifier logic bugs to transition from 
 
 \section{Scope and Constraints}
 
-...nt focuses exclusively on XDP hook point vulnerabilities in the Linux eBPF verifier version included in kernel LTS 6.8. The vulnerabilities studied are triggered through network packet injection and do not require local code execution. The test environment isolates the target system (VM) and exploit source (host machine) to create a controlled but realistic external-attack scenario. The evidence chain methodology documents how each vulnerability progresses from bytecode through verifier to runtime impact, enabling independent reproduction and verification.
-
-\subsection{Out of Scope}
-
-We do not consider kernel vulnerabilities outside the eBPF subsystem (use-after-free, race conditions, filesystem bugs), as those represent distinct security domains. Hardware-level vulnerabilities like Spectre, Meltdown, and rowhammer are beyond the scope of software analysis. Social engineering, physical access attacks, and supply chain compromise are out of scope. We also exclude Denial-of-Service attacks, as our focus is privilege escalation and integrity violation. Testing is limited to the XDP hook; other eBPF program types (kprobes, tracepoints, LSM) are not evaluated. Finally, we test only Linux LTS 6.8; while findings may generalize to nearby kernel versions, our evidence is specific to this version.
+\noindent
+This assessment focuses exclusively on XDP hook point vulnerabilities in the Linux eBPF verifier version included in kernel LTS 6.8. The vulnerabilities studied are triggered through network packet injection and do not require local code execution. The test environment isolates the target system (VM) and exploit source (host machine) to create a controlled but realistic external-attack scenario. The evidence chain methodology documents how each vulnerability progresses from bytecode through verifier to runtime impact, enabling independent reproduction and verification.
 
 \section{Impact Assessment}
 
 If an attacker successfully exploits an eBPF verifier vulnerability within our threat model, the consequences are severe. An unprivileged user with eBPF loading capability gains unrestricted kernel access and can escalate to root. Security systems implemented in eBPF (DDoS defenses, XDP firewalls, kernel monitoring) can be disabled or bypassed. Sensitive kernel information (address space layout, credentials, configuration) becomes accessible. The fundamental security guarantee that ``eBPF is a sandboxed execution environment'' is violated, undermining the assumption that unprivileged eBPF loading is safe.
 
+\noindent
 This threat model justifies our research: discovering, demonstrating, and understanding eBPF verifier bugs is essential for maintaining kernel security in an era where eBPF is increasingly deployed for critical infrastructure.

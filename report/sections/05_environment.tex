@@ -2,7 +2,8 @@
 
 \section{Test Environment Overview}
 
-The practical exploitation work requires a controlled, reproducible test environment that supports eBPF program loading, XDP attachment, packet generation, and kernel tracing. Our environment is built on Linux LTS 6.8 running inside a KVM/QEMU virtual machine with 2 vCPUs, 4 GB of RAM, and a 20 GB virtual disk. The base image is Ubuntu 24.04 (Noble) Cloud Image, chosen for its balance of stability, standardization, and tooling availability. This configuration ensures that any finding can be reproduced on an identically configured system.
+\noindent
+The practical exploitation work requires a \textbf{controlled, reproducible test environment} that supports \textbf{eBPF program loading}, \textbf{XDP attachment}, \textbf{packet generation}, and \textbf{kernel tracing}. Our environment is built on \textbf{Linux LTS 6.8} running inside a \textbf{KVM/QEMU virtual machine} with 2 vCPUs, 4 GB of RAM, and a 20 GB virtual disk. The base image is \textbf{Ubuntu 24.04 (Noble) Cloud Image}, chosen for its balance of stability, standardization, and tooling availability. This configuration ensures that any finding can be \textbf{reproduced on an identically configured system}.
 
 \begin{figure}[h]
 \centering
@@ -12,25 +13,50 @@ The practical exploitation work requires a controlled, reproducible test environ
 
 \subsection{VM Lifecycle Management}
 
-The repository infrastructure for VM management was created by a previous research team and included a \texttt{virt/vmctl.sh} script that automates VM creation, provisioning, connection, and teardown. For this work, we extended the original setup with modifications to the cloud-init provisioning scripts and network configuration to support external exploitation scenarios. The modified environment now enables bridged networking that allows the host machine to directly target the VM's network stack, simulating real-world attack conditions where an attacker operates from an external network rather than local context.
+\noindent
+The \textbf{virtual machine infrastructure} was created by the \textbf{previous research team} and included a \texttt{virt/vmctl.sh} script that automates \textbf{VM creation}, \textbf{provisioning}, \textbf{connection}, and \textbf{teardown}. For this work, we made \textbf{some modifications and enhancements} to the original setup, as detailed in Section 4 (Infrastructure Modifications to Inherited Codebase).
 
-To create and provision a VM, an operator invokes the script with their SSH public key, and cloud-init automatically installs all necessary dependencies with our enhancements. SSH access to the VM is passwordless, facilitating automated testing pipelines. The script also provides a \texttt{connect} subcommand for interactive debugging and a \texttt{destroy} subcommand for cleanup.
+\noindent
+To create and provision a VM, an operator invokes the script with their SSH public key, and \textbf{cloud-init} automatically installs all necessary dependencies with our enhancements. \textbf{SSH access} to the VM is passwordless, facilitating automated testing pipelines. The script also provides a \texttt{connect} subcommand for interactive debugging and a \texttt{destroy} subcommand for cleanup.
 
-VM provisioning via cloud-init installs a comprehensive development environment: the clang and llvm compilers for eBPF bytecode generation, bpftool for kernel interaction, linux-headers matching the kernel version, network utilities (netcat, tcpdump, iproute2), build tools (make, git, gcc), and configures SSH key injection for passwordless access. This ensures the VM is ready for testing immediately after creation.
+\vspace{0.3cm}
+\noindent
+For convenience, we created a \textbf{Makefile} in the root of the repository that wraps the underlying \texttt{vmctl.sh} script, providing \textbf{three simple commands} for VM management:
 
-Additionally, we configured a shared folder between the host machine and the guest VM, mounted at \texttt{/shared} in the VM. This shared directory allows seamless transfer of exploit payloads, proof-of-concept scripts, and compiled binaries from the host to the VM without requiring manual SCP transfers, streamlining the iterative testing workflow. The shared folder also enables the host machine to directly execute exploit scripts that target the VM's XDP interface over the network, establishing a true external-attacker perspective.
+\begin{itemize}
+  \item \textbf{\texttt{make create}}: Runs the complete VM provisioning workflow, including download of the base image, VM creation, and cloud-init setup. The script executes until it prompts for SSH key credentials. For this test environment, we used basic credentials: username \texttt{ubuntu} and password \texttt{u} for expedited testing.
+  \item \textbf{\texttt{make connect}}: Establishes an interactive SSH connection to the running VM for debugging and manual inspection.
+  \item \textbf{\texttt{make destroy}}: Powers down and permanently deletes the VM, cleaning up disk space and libvirt configurations.
+\end{itemize}
+
+\vspace{0.3cm}
+\noindent
+This abstraction eliminates the need to remember or manually invoke \texttt{vmctl.sh} paths and parameters, streamlining the VM lifecycle during exploitation testing.
+
+\noindent
+VM provisioning via cloud-init installs a \textbf{comprehensive development environment}: the \textbf{clang} and \textbf{llvm} compilers for eBPF bytecode generation, \textbf{bpftool} for kernel interaction, \textbf{linux-headers} matching the kernel version, \textbf{network utilities} (netcat, tcpdump, iproute2), \textbf{build tools} (make, git, gcc), and configures \textbf{SSH key injection} for passwordless access. This ensures the VM is ready for testing immediately after creation.
+
+\vspace{0.3cm}
+\noindent
+Additionally, we configured a \textbf{shared folder} between the host machine and the guest VM, mounted at \texttt{/mnt/shared} in the VM or at \texttt{/home/ubuntu/shared}. This shared directory allows \textbf{seamless transfer} of exploit payloads, proof-of-concept scripts, and compiled binaries from the host to the VM without requiring manual SCP transfers, streamlining the iterative testing workflow.
 
 \subsection{Network Configuration for XDP and External Exploitation}
 
-XDP program attachment requires a real Ethernet interface (not virtual) so that packets are processed at the driver level before entering the kernel's normal networking stack. The test environment configures the VM with Layer 2 connectivity to the host via bridge networking, a standard MTU of 1500 bytes, and promiscuous mode enabled on the XDP-attached interface. This configuration allows the test harness running on the host to send arbitrary packets to the VM's interface and observe the XDP program's processing.
+\noindent
+\textbf{XDP program attachment} requires a \textbf{real Ethernet interface} (not virtual) so that packets are processed at the \textbf{driver level} before entering the kernel's normal networking stack. The test environment configures the VM with \textbf{Layer 2 connectivity} to the host via \textbf{bridge networking}, a standard MTU of 1500 bytes, and \textbf{promiscuous mode} enabled on the XDP-attached interface. This configuration allows the test harness running on the host to send \textbf{arbitrary packets} to the VM's interface and observe the XDP program's processing.
 
+\noindent
 The key innovation is the \textbf{external-perspective exploitation}: rather than triggering vulnerabilities from within the VM itself, we deploy exploit code on the host machine that targets the VM's network interface over the network boundary. This setup provides a \textbf{real-world exploitation scenario} where an unprivileged attacker sends crafted TCP packets from an external source (the host) to an eBPF program running on a network-attached server (the VM). This approach better models realistic attack conditions than local-only exploitation, demonstrating that eBPF verifier failures can be exploited from a network-adjacent attacker position.
 
 \section{Compilation Pipeline}
 
+\noindent
+The \textbf{eBPF compilation process} follows a \textbf{multi-stage approach} to ensure vulnerabilities survive from source code through to kernel execution.
+
 \subsection{C to eBPF Bytecode}
 
-The eBPF compilation process begins with clang targeting the eBPF instruction set. The standard invocation is:
+\noindent
+The standard invocation using \textbf{clang} is:
 
 \vspace{0.3cm}
 \noindent
@@ -48,21 +74,22 @@ The \textbf{-O2} optimization level is critical because \texttt{-O0} may preserv
 
 \subsection{Bytecode Inspection with llvm-objdump}
 
-After compilation, we inspect the bytecode to confirm the vulnerable code path is present and was not optimized away:
+\noindent
+After compilation, we \textbf{inspect the bytecode} to confirm the \textbf{vulnerable code path is present} and was not optimized away:
 
 \vspace{0.3cm}
 \noindent
 \fcolorbox{black!30}{gray!15}{%
   \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
     {\small\ttfamily
-    llvm-objdump -d xdp\_synproxy\_kern.o | grep -A 50 "tcp\_dissect"
+    llvm-objdump -d xdp\_synproxy\_kern.o > bytecode\_analysis.txt
     }
   \end{minipage}%
 }
 \vspace{0.3cm}
 
 \noindent
-This inspection reveals the full instruction sequence in the vulnerable function, register usage patterns, memory access operations (loads and stores), and bounds checks or arithmetic that might be relevant to the vulnerability. This step is essential to prove that the compiler did not inadvertently eliminate the vulnerability through dead-code elimination or aggressive optimization.
+This inspection reveals the \textbf{full instruction sequence} in the vulnerable function, \textbf{register usage patterns}, \textbf{memory access operations} (loads and stores), and \textbf{bounds checks or arithmetic} that might be relevant to the vulnerability. This step is essential to prove that the compiler did not inadvertently eliminate the vulnerability through dead-code elimination or aggressive optimization.
 
 \section{Kernel Tools and eBPF Loading}
 
@@ -155,7 +182,7 @@ Each line corresponds to a vulnerability test; the messages confirm that the vul
 
 \subsection{High-Level Packet Crafting with Scapy}
 
-Most PoCs use Python with the Scapy library for high-level packet construction. A typical exploit:
+For the \textbf{simpler ABI violation vulnerabilities} (5.06a, 5.06b, 5.06d), PoCs use \textbf{Python with the Scapy library} for straightforward packet construction and sending. A typical exploit:
 
 \vspace{0.3cm}
 \noindent
@@ -163,29 +190,30 @@ Most PoCs use Python with the Scapy library for high-level packet construction. 
   \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
     {\small\ttfamily
     from scapy.all import IP, TCP, send\\
-    pkt = IP(dst=target\_ip) / TCP(dport=80, flags="S", seq=exploit\_seq)\\
-    send(pkt, verbose=False)
+    target\_ip = detect\_vm\_ip()  \# Auto-detect via virsh\\
+    pkt = IP(dst=target\_ip) / TCP(dport=80, flags="S")\\
+    send(pkt, count=5, verbose=0)
     }
   \end{minipage}%
 }
 \vspace{0.3cm}
 
 \noindent
-This approach offers simplicity and readability: the packet structure is obvious from the Python code, headers are automatically generated, checksums are computed automatically, and parameters can be easily varied for different attack scenarios. The primary limitation is that the kernel's network stack may perform checksum offloading or other transformations that prevent precise low-level manipulation. For simple network-based vulnerabilities, this is sufficient.
+This approach offers \textbf{simplicity and automation}: IP and TCP headers are automatically generated, checksums are computed by Scapy, and the packet is sent at the raw layer. Scapy handles the complexity of socket setup and header formatting. All ABI-mismatch PoCs include \textbf{automatic IP detection} using \texttt{virsh} queries to find the target VM's IP, eliminating the need for manual IP configuration. The PoCs require \textbf{sudo} to send raw packets.
 
-\subsection{Raw Sockets for Low-Level Control}
+\subsection{Raw Sockets for Precise Exploit Crafting}
 
-For cases requiring precise control over checksums and headers, raw socket code in C/Python is used:
+For the \textbf{more complex taint-tracking vulnerabilities} (5.39, 5.46b), which require \textbf{precise control over packet fields} and \textbf{crafted sequence numbers} or \textbf{malformed TCP headers}, PoCs use \textbf{raw sockets} with low-level \textbf{struct packing}:
 
 \vspace{0.3cm}
 \noindent
 \fcolorbox{black!30}{gray!15}{%
   \begin{minipage}[c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule}
     {\small\ttfamily
-    sock = socket.socket(socket.AF\_INET, socket.SOCK\_RAW, socket.IPPROTO\_TCP)\\
-    sock.setsockopt(socket.IPPROTO\_IP, socket.IP\_HDRINCL, 1)\\
-    \# Construct packet bytes and send\\
-    sock.sendto(packet\_bytes, (target\_ip, 0))
+    s = socket.socket(socket.AF\_INET, socket.SOCK\_RAW, socket.IPPROTO\_TCP)\\
+    tcp\_header = struct.pack('!HHLLBBHHH', src\_port, dst\_port, seq, ack, ...)\\
+    tcp\_check = checksum(pseudo\_header + tcp\_header)\\
+    s.sendto(packet\_bytes, (vm\_ip, 0))
     }
   \end{minipage}%
 }
@@ -194,14 +222,18 @@ For cases requiring precise control over checksums and headers, raw socket code 
 \noindent
 This allows:
 \begin{itemize}
-  \item Direct control over every field (including malformed checksums)
-  \item Bypassing kernel TCP stack validation
-  \item Triggering edge cases in parsing logic
+  \item \textbf{Precise sequence number crafting} (5.39 uses bit-shifted values to exploit endianness truncation in the verifier-bypassed bounds check)
+  \item \textbf{Malformed TCP header fields} (5.46b uses \texttt{doff=15} to claim a 60-byte header while sending 40 bytes, triggering the buffer overflow)
+  \item \textbf{Manual checksum calculation} for valid packets that pass kernel validation
+  \item \textbf{Auto-detection} of both attacker IP (local interface) and target VM IP via \texttt{virsh} integration
 \end{itemize}
+
+\noindent
+All raw socket PoCs include \textbf{error handling}, \textbf{time delays} between packet sends to allow the XDP program to process them, and \textbf{instructions to monitor \texttt{trace\_pipe}} for verifying successful exploitation. All PoCs require \textbf{sudo} to use \texttt{IPPROTO\_TCP} raw sockets.
 
 \section{Testing Session Automation: tmux}
 
-The \texttt{start\_session.sh} script creates a tmux session with three panes:
+\noindent The \textbf{start\_session.sh} script was inherited from the previous research team and subsequently enhanced to automate \texttt{vmlinux.h} extraction and adapt to VM network configuration (see Section~\ref{sec:infra-modifications} for details). It creates a tmux session with three panes:
 
 \begin{table}[h]
 \centering

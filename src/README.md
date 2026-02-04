@@ -1,12 +1,15 @@
-# Untitled
-
 # Practical Exploitation Work
 
-> Context: This directory contains the actual exploitation work — PoC development, testing, and analysis.
-Prerequisite: Read the main README first to understand eBPF, the verifier, and the inherited vulnerability assessment.
-> 
+> **Prerequisite**: Read the [main README](../README.md) first to understand eBPF fundamentals, the verifier, and the inherited vulnerability assessment from the previous team.
+>
+> **Context**: This directory contains the actual exploitation work — PoC development, testing, and analysis.
+>
+> **Documentation Hierarchy**: 
+> - **Parent**: [Root README](../README.md) — eBPF background and project overview
+> - **Current**: This file — Exploitation workflow and environment setup
+> - **Next**: [src/exploits/README.md](exploits/README.md) — Multi-stage analysis methodology and vulnerability details
 
-> **Note:** See [src/MODs.md](src/MODs.md) for a complete list of modifications made relative to the previous team’s repository to ensure a consistent and reproducible setup.
+> **Note:** See [src/MODs.md](MODs.md) for a complete list of modifications made relative to the previous team's repository to ensure a consistent and reproducible setup.
 
 ---
 
@@ -174,3 +177,11 @@ From the original dataset of 60+ patches, the following 5 vulnerabilities were s
 7. **Analyze** with bytecode, verifier, xlated, and (if supported) JIT dumps to complete the evidence chain.
 
 This workflow ensures a reproducible, step-by-step process for validating eBPF verifier failures.
+
+---
+
+## 📖 Next Steps
+
+Now that you understand the environment setup and workflow, proceed to the detailed analysis:
+
+**→ [Continue to src/exploits/README.md](exploits/README.md)** to learn about the multi-stage analysis methodology and detailed descriptions of each of the 5 vulnerabilities under investigation.
