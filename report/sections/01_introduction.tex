@@ -6,7 +6,7 @@ This project investigates the security boundaries of \textbf{eBPF} (extended Ber
 
 \vspace{0.3cm}
 \noindent
-A previous research team conducted a comprehensive, rule-based assessment of the XDP SynProxy program using ISO-IEC TS 17961-2013 as the vulnerability catalog. They identified approximately 60 potential violations and classified roughly 9 as theoretically exploitable by analyzing the verifier's behavior under code patches. Their work established the foundation for this study but left a critical gap: theoretical analysis alone is insufficient to understand real-world impact. This work bridges that gap by implementing functional proof-of-concept exploits, collecting multi-stage evidence, and determining which verifier bypasses represent genuine memory corruption primitives versus harmless runtime behaviors.
+A previous research team conducted a comprehensive, rule-based assessment of the XDP SynProxy program using ISO-IEC TS 17961-2013~\cite{ISO17961} as the vulnerability catalog. They identified approximately 60 potential violations and classified roughly 9 as theoretically exploitable by analyzing the verifier's behavior under code patches. Their work established the foundation for this study but left a critical gap: theoretical analysis alone is insufficient to understand real-world impact. This work bridges that gap by implementing functional proof-of-concept exploits, collecting multi-stage evidence, and determining which verifier bypasses represent genuine memory corruption primitives versus harmless runtime behaviors.
 
 \vspace{0.3cm}
 \noindent
@@ -57,5 +57,5 @@ The objectives are to:
   \item[Chapters 2--5] Establish eBPF background, threat model, methodology, and test environment
   \item[Chapter 6] Provide an overview of all five vulnerabilities and their classification
   \item[Chapters 7--11] Deep-dive analysis of each vulnerability (source, bytecode, verifier, runtime)
-  \item[Chapters 12--15] Synthesize results, discuss limitations, propose future directions, and conclude
+  \item[Chapter 12] Synthesizes results, discusses limitations, and provides recommendations and conclusions
 \end{description}

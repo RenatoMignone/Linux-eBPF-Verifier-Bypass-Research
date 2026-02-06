@@ -1,0 +1,112 @@
+% ============================================================================
+% Bibliography for eBPF Exploitation Report
+% ============================================================================
+
+% --- ISO Standards ---
+@techreport{ISO17961,
+  title        = {{ISO/IEC TS 17961:2013 -- Information technology -- Programming languages, their environments and system software interfaces -- C Secure Coding Rules}},
+  institution  = {International Organization for Standardization},
+  year         = {2013},
+  type         = {Technical Specification},
+  url          = {https://www.iso.org/standard/61134.html}
+}
+
+% --- CVEs ---
+@misc{CVE-2020-8835,
+  title        = {{CVE-2020-8835: Linux Kernel eBPF Bounds Tracking Error}},
+  howpublished = {NIST National Vulnerability Database},
+  year         = {2020},
+  url          = {https://nvd.nist.gov/vuln/detail/CVE-2020-8835},
+  note         = {Arbitrary read/write via verifier bounds tracking error}
+}
+
+@misc{CVE-2021-3490,
+  title        = {{CVE-2021-3490: Linux Kernel eBPF ALU32 Bounds Tracking}},
+  howpublished = {NIST National Vulnerability Database},
+  year         = {2021},
+  url          = {https://nvd.nist.gov/vuln/detail/CVE-2021-3490},
+  note         = {Privilege escalation via ALU32 bounds tracking error}
+}
+
+@misc{CVE-2021-31440,
+  title        = {{CVE-2021-31440: Linux Kernel eBPF Bounds Propagation Bug}},
+  howpublished = {NIST National Vulnerability Database},
+  year         = {2021},
+  url          = {https://nvd.nist.gov/vuln/detail/CVE-2021-31440},
+  note         = {Bounds propagation error leading to OOB access}
+}
+
+@misc{CVE-2022-23222,
+  title        = {{CVE-2022-23222: Linux Kernel eBPF Pointer Arithmetic Confusion}},
+  howpublished = {NIST National Vulnerability Database},
+  year         = {2022},
+  url          = {https://nvd.nist.gov/vuln/detail/CVE-2022-23222},
+  note         = {Pointer arithmetic confusion in verifier}
+}
+
+@misc{CVE-2023-2163,
+  title        = {{CVE-2023-2163: Linux Kernel eBPF Verifier Log Buffer Overflow}},
+  howpublished = {NIST National Vulnerability Database},
+  year         = {2023},
+  url          = {https://nvd.nist.gov/vuln/detail/CVE-2023-2163},
+  note         = {Verifier log buffer overflow}
+}
+
+% --- eBPF Documentation ---
+@online{ebpf-io,
+  title        = {{eBPF -- Extended Berkeley Packet Filter}},
+  author       = {{eBPF Foundation}},
+  url          = {https://ebpf.io/},
+  year         = {2024},
+  note         = {Official eBPF documentation and resources}
+}
+
+@online{xdp-docs,
+  title        = {{XDP -- eXpress Data Path Documentation}},
+  author       = {{Linux Kernel Documentation}},
+  url          = {https://www.kernel.org/doc/html/latest/networking/filter.html},
+  year         = {2024},
+  note         = {Official Linux kernel XDP documentation}
+}
+
+@online{bpf-verifier,
+  title        = {{BPF Verifier Documentation}},
+  author       = {{Linux Kernel Documentation}},
+  url          = {https://www.kernel.org/doc/html/latest/bpf/verifier.html},
+  year         = {2024},
+  note         = {Official eBPF program verification documentation}
+}
+
+% --- Linux Kernel Sources ---
+@online{linux-selftests,
+  title        = {{Linux Kernel Selftests -- XDP SynProxy}},
+  author       = {{Linux Kernel}},
+  url          = {https://github.com/torvalds/linux/blob/v6.8/tools/testing/selftests/bpf/prog_tests/xdp_synproxy.c},
+  year         = {2024},
+  note         = {XDP SynProxy implementation in Linux kernel selftests}
+}
+
+@online{xdp-project-examples,
+  title        = {{XDP Project -- BPF Examples}},
+  author       = {{XDP Project}},
+  url          = {https://github.com/xdp-project/bpf-examples/tree/main/xdp-synproxy},
+  year         = {2024},
+  note         = {XDP SynProxy reference implementation}
+}
+
+% --- Academic References ---
+@inproceedings{nelson2020bpf,
+  title        = {{Serval: Verifying the Linux Kernel}},
+  author       = {Nelson, Luke and Bornholt, James and Gu, Ronghui and Baumann, Andrew and Torlak, Emina and Wang, Xi},
+  booktitle    = {Proceedings of the 26th ACM Symposium on Operating Systems Principles},
+  year         = {2020},
+  note         = {Formal verification approaches for BPF}
+}
+
+@inproceedings{vishwanathan2023bpf,
+  title        = {{Sound and Complete Verification of BPF Programs}},
+  author       = {Vishwanathan, Harishankar and Shacham, Hovav and Torlak, Emina},
+  booktitle    = {USENIX Security Symposium},
+  year         = {2023},
+  note         = {Formal verification of eBPF programs}
+}

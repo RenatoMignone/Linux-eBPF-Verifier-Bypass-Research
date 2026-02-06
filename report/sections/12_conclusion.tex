@@ -144,10 +144,27 @@ All findings, PoCs, and evidence are available in the project repository:
 
 For reproduction instructions and environment setup, see the main \texttt{README.md} and \texttt{Makefile}.
 
----
+\section{Future Work}
 
 \noindent
-\textbf{Date}: February 2026  
-\textbf{Author}: Renato Mignone  
-\textbf{Course}: Security Verification and Testing  
+This research opens several avenues for continued investigation:
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Backport Analysis}: Test vulnerabilities against older kernel versions (5.x, 4.x) to determine historical scope
+  \item \textbf{Extended Vulnerability Catalog}: Analyze additional patches from the prior team's 60+ vulnerability catalog
+  \item \textbf{Automated PoC Generation}: Develop tooling to automatically generate exploit packets from verifier log patterns
+  \item \textbf{Formal Verification}: Apply formal methods to verify proposed verifier patches~\cite{nelson2020bpf,vishwanathan2023bpf}
+  \item \textbf{Cross-Architecture Testing}: Extend testing to ARM64 and RISC-V architectures
+  \item \textbf{Fuzzing Integration}: Integrate findings with eBPF fuzzing frameworks (e.g., Syzkaller)
+\end{enumerate}
+
+\vspace{1cm}
+\noindent
+\rule{\textwidth}{0.4pt}
+
+\vspace{0.3cm}
+\noindent
+\textbf{Date}: February 2026\\
+\textbf{Author}: Renato Mignone\\
+\textbf{Course}: Security Verification and Testing\\
 \textbf{Institution}: Politecnico di Torino

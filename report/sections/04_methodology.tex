@@ -7,7 +7,7 @@ The core methodology is an \textbf{evidence chain}: demonstrating that a vulnera
 \subsection{Stages of the Evidence Chain}
 
 \begin{enumerate}[label=\arabic*.]
-  \item \textbf{Patch Injection}: Inject a specific ISO-IEC TS 17961-2013 rule violation into \texttt{xdp\_synproxy\_kern.c} via Git patch file to ensure reproducibility and version control.
+  \item \textbf{Patch Injection}: Inject a specific ISO-IEC TS 17961-2013~\cite{ISO17961} rule violation into \texttt{xdp\_synproxy\_kern.c} via Git patch file to ensure reproducibility and version control.
   
   \item \textbf{Bytecode Inspection}: Compile the patched C code with clang/LLVM and dump the compiled eBPF object file using \texttt{llvm-objdump -d}. Confirm that the vulnerable code path is present in the bytecode and was not dead-code-eliminated by the compiler.
   
@@ -27,7 +27,7 @@ A typical patch includes metadata (author, date, and commit message describing t
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.75\textwidth]{resources/images/patch_lifecycle.jpg}
-\caption{Patch Lifecycle: From vulnerability injection through evidence chain validation}
+\caption{Patch Lifecycle: From vulnerability injection through evidence chain validation (diagram by author)}
 \end{figure}
 
 \section{Tools and Infrastructure}

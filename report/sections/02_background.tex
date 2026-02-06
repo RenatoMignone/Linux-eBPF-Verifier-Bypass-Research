@@ -2,7 +2,7 @@
 
 \section{What is eBPF?}
 
-\textbf{eBPF} (extended Berkeley Packet Filter) is a \textbf{revolutionary in-kernel virtual machine} that allows user-supplied programs to execute safely within the Linux kernel. It evolved from classic BPF (1992, used for packet filtering in \texttt{tcpdump}) and became a \textbf{general-purpose sandboxed execution environment} in Linux 3.18 (2014).
+\textbf{eBPF} (extended Berkeley Packet Filter)~\cite{ebpf-io} is a \textbf{revolutionary in-kernel virtual machine} that allows user-supplied programs to execute safely within the Linux kernel. It evolved from classic BPF (1992, used for packet filtering in \texttt{tcpdump}) and became a \textbf{general-purpose sandboxed execution environment} in Linux 3.18 (2014).
 
 \noindent
 eBPF provides a complete execution environment featuring 11 registers and a 64-bit word size, supporting key-value stores called Maps for inter-program and user-space communication. The architecture includes Helpers, which are kernel function calls with specific signatures, allowing eBPF programs to interact with the kernel in controlled ways. Hooks provide attachment points throughout the kernel stack, including kprobes for function instrumentation, tracepoints for static kernel events, XDP for network packet processing, TC for traffic control, and LSM for security policies. Finally, JIT compilation translates eBPF bytecode directly into native CPU instructions, enabling near-native performance.
@@ -13,12 +13,12 @@ eBPF has become ubiquitous in modern Linux deployments. Observability platforms 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.7\textwidth]{resources/images/ebpf_architecture.jpg}
-\caption{eBPF Architecture Overview: The complete execution pipeline from user-space through the kernel}
+\caption{eBPF Architecture Overview: The complete execution pipeline from user-space through the kernel (diagram by author)}
 \end{figure}
 
 \section{The eBPF Verifier: Security Cornerstone}
 
-The verifier is a \textbf{static analyzer} that runs before every eBPF program is executed. Its primary responsibility is to guarantee four critical security properties: \textbf{memory safety} (preventing out-of-bounds reads and writes), \textbf{termination} (ensuring all code paths complete with bounded loops), \textbf{type safety} (enforcing correct use of pointers and scalar types), and \textbf{helper compliance} (validating that kernel function arguments match expected types and counts).
+The verifier~\cite{bpf-verifier} is a \textbf{static analyzer} that runs before every eBPF program is executed. Its primary responsibility is to guarantee four critical security properties: \textbf{memory safety} (preventing out-of-bounds reads and writes), \textbf{termination} (ensuring all code paths complete with bounded loops), \textbf{type safety} (enforcing correct use of pointers and scalar types), and \textbf{helper compliance} (validating that kernel function arguments match expected types and counts).
 
 \subsection{Verifier Operation}
 
@@ -32,7 +32,7 @@ The verifier is extraordinarily \textbf{complex}, comprising approximately 20,00
 \textbf{Pruning failures} occur when the verifier skips re-verification of code paths it deems ``similar'' to previously verified paths, but which are actually unsafe. \textbf{Type confusion} happens when the verifier incorrectly tracks whether a register holds a SCALAR or a POINTER, leading to unsafe memory access. \textbf{Bounds propagation errors} cause the verifier to lose track of arithmetic constraints as operations compose, allowing values to exceed their documented ranges. \textbf{ABI assumption errors} (ABI = Application Binary Interface) arise from misunderstandings about how function calls marshal arguments across the verifier boundary, particularly when dealing with function pointers.
 
 \noindent
-The real-world impact of such verifier bugs is significant. Historical CVEs in eBPF's verifier include CVE-2020-8835 (enabling arbitrary read/write), CVE-2021-3490 (ALU32 bounds tracking error), CVE-2022-23222 (pointer arithmetic confusion), and CVE-2023-2163 (verifier log buffer overflow). Each of these represents a case where carefully crafted eBPF code bypassed the verifier's safety checks and reached kernel execution.
+The real-world impact of such verifier bugs is significant. Historical CVEs in eBPF's verifier include CVE-2020-8835~\cite{CVE-2020-8835} (enabling arbitrary read/write), CVE-2021-3490~\cite{CVE-2021-3490} (ALU32 bounds tracking error), CVE-2022-23222~\cite{CVE-2022-23222} (pointer arithmetic confusion), and CVE-2023-2163~\cite{CVE-2023-2163} (verifier log buffer overflow). Each of these represents a case where carefully crafted eBPF code bypassed the verifier's safety checks and reached kernel execution.
 
 \section{The XDP SynProxy Target}
 
@@ -41,11 +41,11 @@ The real-world impact of such verifier bugs is significant. Historical CVEs in e
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.7\textwidth]{resources/images/xdp_stack_comparison.jpg}
-\caption{XDP Processing: Earliest point in the network stack before traditional TCP/IP processing}
+\caption{XDP Processing: Earliest point in the network stack before traditional TCP/IP processing (diagram by author)}
 \end{figure}
 
 \noindent
-\textbf{XDP (eXpress Data Path)} is a hook point at the network driver level, executing before packets enter the kernel's normal networking stack. This location is ideal for security research for several reasons. First, it processes packets at the earliest possible point in the stack, enabling line-rate packet processing without the overhead of traditional kernel networking code. Second, XDP programs have direct access to packet buffers without indirection, allowing efficient memory manipulation. Third, real-world XDP code performs complex pointer arithmetic on network headers (Ethernet, IP, TCP), creating opportunities for the kind of parsing vulnerabilities we study. Finally, XDP is critical infrastructure for DDoS mitigation, firewall rules, and load balancing, making verifier bugs here particularly impactful.
+\textbf{XDP (eXpress Data Path)}~\cite{xdp-docs} is a hook point at the network driver level, executing before packets enter the kernel's normal networking stack. This location is ideal for security research for several reasons. First, it processes packets at the earliest possible point in the stack, enabling line-rate packet processing without the overhead of traditional kernel networking code. Second, XDP programs have direct access to packet buffers without indirection, allowing efficient memory manipulation. Third, real-world XDP code performs complex pointer arithmetic on network headers (Ethernet, IP, TCP), creating opportunities for the kind of parsing vulnerabilities we study. Finally, XDP is critical infrastructure for DDoS mitigation, firewall rules, and load balancing, making verifier bugs here particularly impactful.
 
 \subsection{SYN Proxy Fundamentals}
 
@@ -55,17 +55,17 @@ A SYN Proxy solves a fundamental problem in network security: defending against 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.7\textwidth]{resources/images/syn_proxy_flow.jpg}
-\caption{SYN Proxy Flow: Intercepting and validating client connections}
+\caption{SYN Proxy Flow: Intercepting and validating client connections (diagram by author)}
 \end{figure}
 
 \noindent
-The XDP SynProxy in the Linux selftests (\texttt{xdp\_synproxy\_kern.c}) implements this defense directly at the driver level. When a SYN packet arrives, the program parses Ethernet, IP, and TCP headers to identify the connection parameters. For incoming SYN packets, it generates a cryptographic SYN cookie encoding the client's address, port, and timestamp, then crafts a SYN-ACK response containing this cookie as the sequence number. When the client returns with an ACK containing the cookie, the program validates the cookie and, if correct, allows the connection through. This implementation uses complex pointer arithmetic for header parsing, eBPF maps for state management, and multiple kernel helper functions, making it an excellent target for testing whether the verifier correctly handles real-world eBPF code.
+The XDP SynProxy in the Linux selftests~\cite{linux-selftests} (\texttt{xdp\_synproxy\_kern.c}) implements this defense directly at the driver level. When a SYN packet arrives, the program parses Ethernet, IP, and TCP headers to identify the connection parameters. For incoming SYN packets, it generates a cryptographic SYN cookie encoding the client's address, port, and timestamp, then crafts a SYN-ACK response containing this cookie as the sequence number. When the client returns with an ACK containing the cookie, the program validates the cookie and, if correct, allows the connection through. This implementation uses complex pointer arithmetic for header parsing, eBPF maps for state management, and multiple kernel helper functions, making it an excellent target for testing whether the verifier correctly handles real-world eBPF code.
 
 \section{The Prior Team's Work}
 
 \subsection{ISO-IEC TS 17961-2013 Rule-Based Assessment}
 
-A previous team (Francesco Rollo, Gianfranco Trad, Giorgio Fardo, Giovanni Nicosia) systematically applied each of the 46 rules from ISO-IEC TS 17961-2013 (C Secure Coding Standard) to the XDP SynProxy program. For each rule, they asked: \textit{``If we intentionally violate this rule in the eBPF code, does the verifier catch it?''}
+A previous team (Francesco Rollo, Gianfranco Trad, Giorgio Fardo, Giovanni Nicosia) systematically applied each of the 46 rules from ISO-IEC TS 17961-2013~\cite{ISO17961} (C Secure Coding Standard) to the XDP SynProxy program. For each rule, they asked: \textit{``If we intentionally violate this rule in the eBPF code, does the verifier catch it?''}
 
 \noindent
 The assessment found:
