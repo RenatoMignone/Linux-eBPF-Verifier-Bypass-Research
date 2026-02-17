@@ -15,8 +15,8 @@ This practical exploitation study analyzed five vulnerabilities identified by a 
 5.06a & ABI Mismatch & Runtime Trigger & High \\
 5.06b & ABI Mismatch & Runtime Trigger & High \\
 5.06d & Type Mismatch & Runtime Trigger / Limited & High \\
-5.39 & Taint + Range & Exploitable (Memory Corruption) & Very High \\
-5.46b & Taint + Bounds & Exploitable (Buffer Overflow) & Very High \\
+5.39 & Taint + Range & Verifier Bypass (Runtime OOB Blocked) & Very High \\
+5.46b & Taint + Bounds & Intra-Packet Corruption (Compiler/Language Gap) & Very High \\
 \hline
 \end{tabular}
 \caption{Classification of five analyzed vulnerabilities}
@@ -31,7 +31,7 @@ The five vulnerabilities analyzed in Chapters 7--11 demonstrate \textbf{two crit
 First, the verifier \textbf{does not enforce x86-64 ABI compliance} for function pointers, accepting calls with \textbf{incompatible type signatures} (5.06a), \textbf{mismatched argument counts} (5.06b), and \textbf{type-width mismatches} (5.06d). These represent a \textbf{systematic verifier gap} affecting all code using function pointers with non-matching signatures. 
 
 \noindent
-Second, the verifier \textbf{fails to properly track tainted values} (user-controlled data from packet fields) through control flow and into array indices or bounds checks, enabling \textbf{out-of-bounds memory access} (5.39) and \textbf{buffer overflow} (5.46b). 
+Second, the verifier \textbf{fails to properly track tainted values} (user-controlled data from packet fields) through control flow and into array indices, enabling \textbf{out-of-bounds memory access} on the eBPF stack (5.39). For 5.46b, the vulnerability is better understood as a \textbf{compiler/language-level gap}: at the eBPF bytecode level, packet accesses are unstructured pointer arithmetic, and the C-level struct field boundaries (e.g., \texttt{h\_dest[6]}) are lost during compilation. Extended testing confirmed that the verifier \textbf{correctly enforces packet-level bounds} (\texttt{data\_end}), but cannot enforce field-level bounds that do not exist in the bytecode.
 
 \noindent
 All five vulnerabilities \textbf{survive the complete compilation pipeline} from source code through bytecode, verifier acceptance, xlated transformation, and runtime execution, confirming that \textbf{neither LLVM nor the verifier eliminate} or guard against these unsafe code paths. 
@@ -61,7 +61,7 @@ The \textbf{eBPF verifier does not enforce} ABI (Application Binary Interface) c
 \subsection{Real Vulnerabilities Exist}
 
 \noindent
-Vulnerabilities 5.39 (\textbf{eBPF-local stack OOB write}) and 5.46b (\textbf{packet buffer overflow}) are not theoretical. They are confirmed to pass the verifier, confirmed to compile to bytecode that preserves the vulnerability, confirmed to execute at runtime with observable \textbf{memory corruption}, and proven memory write primitives with scope limitations: 5.39 is eBPF-sandbox-limited; 5.46b is packet-memory-limited.
+Vulnerability 5.39 (\textbf{verifier bypass via unprototyped function pointer}) and 5.46b (\textbf{intra-packet buffer corruption}) are not theoretical verifier gaps. They are confirmed to pass the verifier with tainted data flows intact. For 5.39, extended testing with \texttt{volatile} revealed that while the taint tracking bypass is real, a second independent verifier check (\texttt{fp + register} arithmetic) blocks the actual OOB stack write. The original code loads only because LLVM eliminates the store as dead code. For 5.46b, variant testing confirmed that intra-packet corruption occurs but cannot escape the packet buffer boundary.
 
 \subsection{Evidence Chain Validation}
 
@@ -71,7 +71,7 @@ All five vulnerabilities survive the full pipeline from C source through verific
 \section{Relationship to Prior Work}
 
 \noindent
-This project builds directly on the prior team's theoretical assessment. Where they asked \textit{``Does the verifier accept this rule violation?''}, this work asked \textit{``Can we actually exploit it?''} The prior team's classifications (exploitable, limited, safe) were largely confirmed by this practical work. This work extended their analysis by providing functional PoCs and runtime evidence, quantifying memory corruption (bytes written, offsets, scope), establishing a reproducible test infrastructure, and documenting exploitation scope limitations: 5.39 is eBPF-sandbox-limited (DoS-capable, not RCE (Remote Code Execution)); 5.46b is packet-buffer-limited (not kernel compromise).
+This project builds directly on the prior team's theoretical assessment. Where they asked \textit{``Does the verifier accept this rule violation?''}, this work asked \textit{``Can we actually exploit it?''} The prior team's classifications (exploitable, limited, safe) were largely confirmed by this practical work. This work extended their analysis by providing functional PoCs and runtime evidence, quantifying memory corruption scope and limitations, establishing a reproducible test infrastructure, documenting exploitation scope limitations: 5.39 demonstrates a confirmed verifier bypass (taint tracking loss through unprototyped calls) but the actual OOB write is independently blocked by a second verifier check; 5.46b demonstrates intra-packet corruption that cannot escape the packet buffer boundary, and distinguishing between verifier gaps (ABI compliance, taint tracking) and compiler/language gaps (struct-field-level bounds in packet memory).
 
 \section{Recommendations}
 

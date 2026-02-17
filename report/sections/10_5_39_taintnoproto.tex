@@ -2,14 +2,14 @@
 
 \section{Executive Summary}
 
-Vulnerability 5.39 is a \textbf{confirmed memory corruption vulnerability} combining an unprototyped function pointer (ISO-IEC Rule 5.39 violation) with a \textbf{tainted array index derived from the TCP sequence number}, enabling \textbf{out-of-bounds writes to the eBPF-local stack frame}. This is directly exploitable but \textbf{sandbox-limited}, corruption cannot escape the eBPF context to compromise the kernel.
+Vulnerability 5.39 is a \textbf{confirmed verifier bypass} combining an unprototyped function pointer (ISO-IEC Rule 5.39 violation) with a \textbf{tainted array index derived from the TCP sequence number}. The verifier loses range tracking for the tainted argument, but extended testing revealed that a \textbf{second, independent verifier check} on stack pointer arithmetic (\texttt{fp + register}) prevents the actual OOB write at runtime. The original code loads only because \textbf{LLVM eliminates the store as dead code} before the verifier sees it.
 
 \begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=ISO Rule Violated,fonttitle=\bfseries]
 ISO-IEC Rule 5.39: ``Do not create pointers to functions with an implicit return type''
 \end{tcolorbox}
 
 \begin{tcolorbox}[colback=red!5!white,colframe=red!75!black,title=Severity,fonttitle=\bfseries]
-\textbf{MEDIUM-HIGH:} Direct memory corruption confirmed. Out-of-bounds stack writes with attacker-controlled offset and value. DoS-capable. \textbf{Privilege escalation impossible due to eBPF sandbox isolation}.
+\textbf{MEDIUM:} Verifier bypass confirmed (unprototyped function pointer breaks taint/range tracking). However, the actual OOB stack write is \textbf{independently blocked} by a second verifier check on \texttt{fp + register} arithmetic. Original code loads only because LLVM eliminates the store as dead code. \textbf{No runtime memory corruption in this scenario}.
 \end{tcolorbox}
 
 \subsection{Why This Vulnerability Matters}
@@ -17,9 +17,10 @@ ISO-IEC Rule 5.39: ``Do not create pointers to functions with an implicit return
 \begin{enumerate}[label=\arabic*.]
   \item \textbf{Unprototyped Function Pointer}: Verifier loses tracking of what the function does and what arguments it accepts
   \item \textbf{Tainted Array Index}: TCP sequence number is attacker-controlled and used directly as an array index
-  \item \textbf{No Bounds Checking}: Verifier cannot prove the index stays within bounds [0-15]
-  \item \textbf{Direct Memory Write}: Can corrupt adjacent eBPF-local stack memory
-  \item \textbf{Sandbox Constraint}: eBPF execution is isolated; corruption cannot reach kernel memory or task credentials
+  \item \textbf{Verifier Bypass}: Verifier cannot prove the index stays within bounds [0-15] because range info is lost at the unprototyped call boundary
+  \item \textbf{Dead Store Elimination}: LLVM optimizes away the actual memory write, preventing the verifier from seeing the unsafe \texttt{fp + register} operation
+  \item \textbf{Second Verifier Check}: When the write is forced with \texttt{volatile}, the verifier independently catches \texttt{fp + unbounded register}
+  \item \textbf{Sandbox Constraint}: Even if the write occurred, eBPF execution is isolated from kernel memory
 \end{enumerate}
 
 \section{The Vulnerable Code Pattern}
@@ -169,19 +170,68 @@ Kernel trace output:
 \vspace{0.3cm}
 
 \noindent
-\textbf{Finding}: The trace shows indices 16, 17, 25 (all $\geq$ 16, causing OOB writes) and confirms the write value (42). \textbf{Links all stages together}. Vulnerability executes at runtime.
+\textbf{Finding}: The trace shows indices 16, 17, 25 (all $\geq$ 16) and the value 42 printed at each index. However, this output requires careful interpretation: the \texttt{bpf\_printk("Content \%d", s.array1[i])} prints 42 because it is a hardcoded constant, not because it reads from a successfully written OOB location. LLVM eliminated the actual \texttt{s.array1[i] = 42} store as a dead store optimization before the bytecode reached the verifier.
+
+\section{Extended Testing: Volatile Modification}
+
+To verify whether the OOB write actually occurs at runtime (rather than just the index computation), a modified patch was created using \texttt{volatile} to force the compiler to emit the store instruction.
+
+\subsection{The Test}
+
+\noindent
+The \texttt{sample\_struct} was declared as \texttt{volatile} and reads of adjacent array elements were added after the write, preventing LLVM from eliminating the store as dead code.
+
+\subsection{Result: REJECTED by the Verifier}
+
+\begin{tcolorbox}[colback=gray!10, colframe=gray!10, arc=2pt, boxrule=0pt]
+\small\ttfamily
+math between fp pointer and register with unbounded min value is not allowed
+\end{tcolorbox}
+
+\subsection{Interpretation}
+
+\noindent
+The verifier has \textbf{two independent safety checks}:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Check} & \textbf{Purpose} & \textbf{5.39 Result} \\
+\hline
+Taint tracking (prototype) & Track range through calls & BYPASSED \\
+Stack pointer arithmetic & Ensure fp+register bounded & NOT BYPASSED \\
+\hline
+\end{tabular}
+\caption{Dual-layer verifier protection for vulnerability 5.39}
+\end{table}
+
+\noindent
+\textbf{Why the original code loads}: LLVM sees that \texttt{s.array1[i] = 42} is never read after the write, eliminates the store as dead code, and without the store, the verifier never sees \texttt{fp + unbounded\_register}.
+
+\noindent
+\textbf{Why the volatile version is rejected}: \texttt{volatile} prevents LLVM from eliminating the store, so the bytecode contains \texttt{fp + r\_tainted}, and the verifier catches the unbounded register.
+
+\subsection{Conclusion from Extended Testing}
+
+\noindent
+The verifier bypass via unprototyped function pointer is \textbf{real and confirmed}: the verifier loses range tracking for the tainted parameter. However, the practical impact is limited: without \texttt{volatile}, the compiler eliminates the OOB write; with \texttt{volatile}, the verifier's second check catches it. This creates a paradox where the vulnerability is only loadable when the dangerous operation does not actually execute.
 
 \section{Exploitation Analysis}
-\textbf{Memory corruption has been confirmed}: the verifier accepts the program, the bytecode preserves the vulnerability, the xlated bytecode has no guards, runtime executes \textbf{out-of-bounds writes}, the attacker controls the \textbf{index} (via TCP sequence number), and the attacker controls the \textbf{write value} (fixed at 0x42). 
-
 \noindent
-The `array1[16]` buffer is only \textbf{16 bytes} (indices 0-15 valid), so writing to indices 16-25 \textbf{overwrites 10 bytes of adjacent memory} into `array2[0-9]`, modifying adjacent eBPF-local variables. For example, index 25 with value 0x42 writes to offset 25, corrupting 10 bytes into adjacent memory. 
+The verifier bypass has been \textbf{confirmed}: the unprototyped function pointer causes the verifier to lose range tracking for tainted arguments. The tainted index (TCP sequence number) reaches the function with out-of-bounds values (16, 17, 25), as confirmed by \texttt{bpf\_trace\_printk} output.
 
+\vspace{0.2cm}
 \noindent
-The vulnerability can \textbf{crash the XDP handler} via corrupted stack frame, cause \textbf{kernel panic} if corruption affects critical control structures, or \textbf{disable network processing} on the interface, and it is \textbf{reliable} because the attacker controls the index value (TCP sequence number), any SYN packet can trigger it, and multiple packets can trigger multiple OOB writes. 
-\vspace{0.3cm}
-\\
-However, \textbf{privilege escalation is impossible} due to \textbf{eBPF sandbox constraints}: execution is isolated from kernel memory, the eBPF stack is separate from kernel stack, and corrupted return addresses affect only the eBPF execution context (not kernel), so memory corruption is \textbf{eBPF-local only} and not kernel-level compromise.
+However, extended testing with \texttt{volatile} revealed that the \textbf{actual memory write is prevented} by a dual-layer protection mechanism: (1) without \texttt{volatile}, LLVM eliminates the store as dead code before the verifier sees it; (2) with \texttt{volatile}, the verifier's independent check on \texttt{fp + register} arithmetic catches the unbounded register and rejects the program.
+
+\vspace{0.2cm}
+\noindent
+The vulnerability demonstrates a \textbf{genuine verifier deficiency}: the unprototyped function pointer breaks taint/range tracking, which is a real gap in the verifier's safety analysis. However, the \textbf{defense-in-depth} of the verifier (the separate \texttt{fp + register} bounds check) independently prevents the actual OOB write from occurring at runtime.
+
+\vspace{0.2cm}
+\noindent
+This finding is significant because it shows that the verifier's safety depends on \textbf{multiple independent checks working together}: if only the taint tracking check existed, the vulnerability would be exploitable whenever the compiler preserves the store. The second check provides a safety net, but the underlying verifier gap (loss of range info through unprototyped calls) remains a real concern for future code patterns.
 
 \section{Artifact Evidence}
 

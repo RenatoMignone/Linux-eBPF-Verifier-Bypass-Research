@@ -9,7 +9,7 @@ ISO-IEC Rule 5.46: ``Do not apply the sizeof operator to a polymorphic object'' 
 \end{tcolorbox}
 
 \begin{tcolorbox}[colback=red!5!white,colframe=red!75!black,title=Severity,fonttitle=\bfseries]
-\textbf{MEDIUM:} Direct memory corruption confirmed, but \textbf{scope-limited to packet-buffer memory}. Overwrites adjacent packet fields (MAC addresses), not kernel structures. \textbf{No privilege escalation possible}.
+\textbf{MEDIUM:} Direct intra-packet memory corruption confirmed, but \textbf{scope-limited to within the packet buffer}. Overwrites adjacent packet fields (MAC addresses, IP/TCP headers), not kernel structures. Extended testing confirmed the verifier \textbf{correctly enforces packet-level bounds} (\texttt{data\_end}); the field-level gap is a \textbf{compiler/language-level issue}. \textbf{No privilege escalation possible}.
 \end{tcolorbox}
 
 \subsection{Why This Vulnerability Matters}
@@ -18,7 +18,8 @@ ISO-IEC Rule 5.46: ``Do not apply the sizeof operator to a polymorphic object'' 
   \item \textbf{Tainted Packet Field}: TCP Data Offset (doff) is attacker-controlled
   \item \textbf{No Validation}: Value is used directly without bounds checking
   \item \textbf{Fixed-Size Buffer}: Destination MAC address buffer is only 6 bytes
-  \item \textbf{Verifier Gap}: Doesn't enforce field-level bounds checking within packet structures
+  \item \textbf{Bytecode Limitation}: At the eBPF bytecode level, struct field boundaries (e.g., \texttt{h\_dest[6]}) do not exist; the compiler translates field accesses into flat pointer arithmetic
+  \item \textbf{Verifier Behavior}: Correctly enforces packet-level bounds (\texttt{data\_end}), but cannot enforce field-level bounds that are lost during compilation
   \item \textbf{Scope Limitation}: Overflow stays within packet-local memory, not kernel memory
 \end{enumerate}
 
@@ -163,25 +164,83 @@ python3 src/exploits/5\_46b\_taintsink/5\_46b\_overflow.py
 \noindent
 \textbf{Links all stages together}. Vulnerability executes at runtime.
 
+\section{Extended Testing: Verifier Boundary Analysis}
+
+To determine the precise boundary of this vulnerability, three additional patch variants were tested. These experiments clarify exactly what the verifier does and does not enforce.
+
+\subsection{Variant A: No Loop Guard}
+
+\noindent
+The loop guard was removed entirely, leaving only the tainted \texttt{doff * 4} as the loop bound.
+
+\noindent
+\textbf{Result: REJECTED by the verifier.} The verifier detected that a write at offset 74 would reach the end of the allocated packet buffer and returned \texttt{invalid access to packet, offset is outside of the packet}. This confirms the verifier correctly tracks packet pointer bounds.
+
+\subsection{Variant B: Constant Guard (255)}
+
+\noindent
+The original tainted guard was replaced with a compile-time constant: \texttt{if (i >= 255) break;}.
+
+\noindent
+\textbf{Result: ACCEPTED by the verifier.} The verifier accepts this because the guard is a compile-time constant, giving it a provable upper bound on the loop. Since \texttt{doff * 4} has a maximum of 60 (the \texttt{doff} field is 4 bits), all writes at offsets 0--59 fall within the 74-byte packet buffer. The verifier does not check that \texttt{h\_dest} is only 6 bytes---at the bytecode level, there is no concept of field boundaries within the packet.
+
+\noindent
+Runtime output confirmed the OOB writes: the loop wrote to indices 0--59, and the comparison detected \texttt{h\_source} corruption.
+
+\subsection{Variant D: Wider Tainted Source (tcp->window, 16-bit)}
+
+\noindent
+\texttt{doff * 4} (4-bit, max 60) was replaced with \texttt{bpf\_ntohs(hdr->tcp->window)} (16-bit, max 65535) as the tainted loop bound, while keeping the constant guard at 255.
+
+\noindent
+\textbf{Result: REJECTED by the verifier.} Even with a wider tainted source, the verifier correctly tracked the packet pointer and rejected writes at offset 74 (exactly at the packet boundary), returning \texttt{invalid access to packet, offset is outside of the packet}.
+
+\subsection{Variant Testing Summary}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Variant} & \textbf{Tainted Source} & \textbf{Guard} & \textbf{Max Write} & \textbf{Verifier} \\
+\hline
+A (no guard) & doff*4 (max 60) & None & 60 & REJECTED \\
+B (constant) & doff*4 (max 60) & i>=255 & 60 & ACCEPTED \\
+D (wider) & tcp->window (max 65535) & i>=255 & 255 & REJECTED \\
+\hline
+\end{tabular}
+\caption{Variant testing results for vulnerability 5.46b}
+\end{table}
+
+\subsection{Conclusions from Variant Testing}
+
+\noindent
+The extended testing established three key findings:
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{The verifier correctly enforces packet-level bounds.} Writes beyond \texttt{data\_end} are always rejected, regardless of loop guard values. The vulnerability cannot be used to escape the packet buffer and corrupt kernel memory.
+  \item \textbf{The verifier does not enforce struct-field-level bounds.} At the eBPF bytecode level, there is no concept of \texttt{h\_dest[6]}. The compiler translates struct field accesses into flat pointer arithmetic (\texttt{data + offset}), and the verifier only checks that this offset stays within \texttt{data}/\texttt{data\_end}.
+  \item \textbf{This is a compiler/language-level gap, not a verifier deficiency.} The verifier operates on bytecode where struct field boundaries do not exist. The responsibility for enforcing field-level bounds falls on the compiler or the developer. Neither the C compiler nor the eBPF toolchain inserts field-boundary checks during compilation.
+\end{enumerate}
+
 \section{Exploitation Analysis}
 \noindent
-Memory corruption has been \textbf{confirmed}: the verifier accepts the program, the bytecode preserves the 60-byte loop, the xlated bytecode has no bounds guards, runtime executes all 60 writes, the attacker controls the length (via TCP data offset), and adjacent memory is corrupted with the MAC source address overwritten.
+Intra-packet memory corruption has been \textbf{confirmed}: the verifier accepts the program, the bytecode preserves the 60-byte loop, the xlated bytecode has no bounds guards, runtime executes all 60 writes, and adjacent packet fields are corrupted.
 
 \vspace{0.2cm}
 \noindent
-Packet memory layout shows that the \texttt{h\_dest} buffer is \textbf{6 bytes} (indices 0-5), \texttt{h\_source} is 6 bytes (indices 6-11), and \texttt{h\_proto} is 2 bytes (indices 12-13). With \textbf{doff=15 (60-byte write)}, bytes 0-5 are written to \texttt{h\_dest} (intended), bytes 6-11 overflow to \texttt{h\_source} (first overflow), bytes 12-13 overflow to \texttt{h\_proto} (second overflow), and bytes 14-59 write beyond the packet header (third overflow).
+Packet memory layout shows that the \texttt{h\_dest} buffer is \textbf{6 bytes} (indices 0-5), \texttt{h\_source} is 6 bytes (indices 6-11), and \texttt{h\_proto} is 2 bytes (indices 12-13). With \textbf{doff=15 (60-byte write)}, bytes 0-5 are written to \texttt{h\_dest} (intended), bytes 6-11 overflow to \texttt{h\_source} (first overflow), bytes 12-13 overflow to \texttt{h\_proto} (second overflow), and bytes 14-59 write into IP/TCP header fields (third overflow).
 
 \vspace{0.2cm}
 \noindent
-The impact is \textbf{scope-limited}: writes stay within the packet buffer structure (not kernel stack), the overflow cannot reach kernel memory, the attacker cannot modify task credentials or eBPF context, and while the packet may be corrupted, network processing continues with limited DoS potential.
+The impact is \textbf{scope-limited}: writes stay within the packet buffer (not kernel stack), the overflow cannot reach kernel memory (confirmed by Variant D testing), the attacker cannot modify task credentials or eBPF context, and while the packet may be corrupted, network processing continues with limited DoS potential.
 
 \vspace{0.2cm}
 \noindent
-While \textbf{direct exploitation for kernel compromise is impossible} due to eBPF sandbox constraints---execution is isolated from kernel memory, the eBPF stack is separate from kernel stack, and corrupted data affects only packet-local memory, not kernel control flow---this vulnerability demonstrates a \textbf{critical verifier gap}: the verifier doesn't enforce field-level bounds and only checks packet-level safety, representing a \textbf{systematic gap in bounds checking} that affects all packet buffer field access patterns.
+This vulnerability is best understood as a \textbf{compiler/language-level gap}: at the eBPF bytecode level, packet accesses are unstructured pointer arithmetic (\texttt{data + offset}). The C-level struct definitions (\texttt{h\_dest[6]}, \texttt{h\_source[6]}, etc.) are an abstraction that exists only at the source code level and is lost during compilation. The verifier correctly enforces the packet-level boundary (\texttt{data\_end}), but has no mechanism to enforce field-level boundaries that do not exist in the bytecode.
 
 \vspace{0.2cm}
 \noindent
-The vulnerability is \textbf{exploitable within packet-buffer scope}, but the eBPF sandbox prevents kernel-level compromise.
+The vulnerability is \textbf{exploitable within packet-buffer scope}: intra-packet memory corruption is confirmed, but the eBPF sandbox and verifier packet bounds prevent kernel-level compromise.
 
 
 \section{Artifact Evidence}

@@ -2,7 +2,7 @@
 
 \section{Motivation: From Theory to Practice}
 
-This project investigates the security boundaries of \textbf{eBPF} (extended Berkeley Packet Filter) by moving from \textbf{theoretical vulnerability identification} to \textbf{practical exploitation}. The fundamental question is: \textit{Do logic bugs in the eBPF verifier allow memory corruption primitives, and if so, with what scope and real-world impact?} This includes distinguishing between eBPF-sandbox-limited corruption (DoS-capable but not kernel-level RCE (Remote Code Execution)) and packet-memory-limited corruption (bounds-checking gap but not privilege escalation).
+This project investigates the security boundaries of \textbf{eBPF} (extended Berkeley Packet Filter) by moving from \textbf{theoretical vulnerability identification} to \textbf{practical exploitation}. The fundamental question is: \textit{Do logic bugs in the eBPF verifier allow memory corruption primitives, and if so, with what scope and real-world impact?} This includes distinguishing between verifier-level gaps (e.g., taint tracking loss through unprototyped calls, blocked by secondary checks) and compiler/language-level gaps (e.g., lack of struct-field-level bounds in packet memory), as well as runtime triggers that are observable but not exploitable.
 
 \vspace{0.3cm}
 \noindent
@@ -35,8 +35,8 @@ This work focuses on five selected vulnerabilities, chosen because they represen
 5.06a & Function Pointer Type Mismatch & ABI/Argument confusion \\
 5.06b & Wrong Number of Arguments & ABI/Argument confusion \\
 5.06d & Wrong Argument Types & ABI/Argument confusion \\
-5.39 & Unprototyped Function Pointer & Stack OOB write \\
-5.46b & Tainted Length (Packet Buffer) & Heap/Stack OOB write \\
+5.39 & Unprototyped Function Pointer & Verifier bypass (OOB blocked) \\
+5.46b & Tainted Length (Packet Buffer) & Intra-packet write \\
 \hline
 \end{tabular}
 \caption{Selected vulnerabilities for practical exploitation study}
