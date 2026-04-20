@@ -1,0 +1,2 @@
+report/**/*.tex linguist-detectable=false
+report/**/*.bib linguist-detectable=false

@@ -1,10 +1,14 @@
-# Practical Exploitation of Linux eBPF Verifier Vulnerabilities (LTS 6.8)
+# Linux eBPF Verifier Bypass - Practical Kernel Exploitation & Privilege Escalation (LTS 6.8)
 
 ![Polito Logo](resources/images/logo_polito.jpg)
 
 > **Course**: Security Verification and Testing - Second Year, First Semester  
 > **Author**: Renato Mignone  
 > **Date**: December 2025
+
+![License](https://img.shields.io/github/license/RenatoMignone/Linux-eBPF-Verifier-Bypass-Research)
+![Last Commit](https://img.shields.io/github/last-commit/RenatoMignone/Linux-eBPF-Verifier-Bypass-Research)
+![Language](https://img.shields.io/github/languages/top/RenatoMignone/Linux-eBPF-Verifier-Bypass-Research)
 
 ---
 
